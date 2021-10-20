@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: echo ${{ github.ref }}
-      - uses: papeloto/action
+      - uses: papeloto/action-zip@v1
         with:
           files: yak_mitm yak_module yak_nmap ./sources.json
           recursive: false
