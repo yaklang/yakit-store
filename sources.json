@@ -1,0 +1,32 @@
+{
+    "types": [
+        {
+            "name": "nuclei",
+            "verbose_cn": "Nuclei Yaml PoC",
+            "verbose_en": "Nuclei Yaml PoC",
+            "external": true,
+            "dir": ""
+        },
+        {
+            "name": "yak",
+            "verbose_cn": "Yak 模块",
+            "verbose_en": "Yak Module",
+            "external": false,
+            "dir": "yak_module"
+        },
+        {
+            "name": "yak-mitm",
+            "verbose_cn": "Yak 中间人劫持插件",
+            "verbose_en": "Yak MITM Module",
+            "external": false,
+            "dir": "yak_mitm"
+        },
+        {
+            "name": "nmap",
+            "verbose_cn": "Nmap 指纹插件",
+            "verbose_en": "Nmap Fingerprint Module",
+            "external": false,
+            "dir": "yak_nmap"
+        }
+    ]
+}

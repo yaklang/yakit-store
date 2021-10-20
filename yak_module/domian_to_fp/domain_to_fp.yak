@@ -1,0 +1,96 @@
+log.setLevel("info")
+
+resultFileName = cli.String("port-result", cli.setDefault(sprintf("yakmisc-port-result-%v.txt", randstr(15))))
+domainFileName = cli.String("domain-result", cli.setDefault(sprintf("yakmisc-domain-result-%v.txt", randstr(15))))
+portResult, err = file.Open(resultFileName)
+die(err)
+defer portResult.Close()
+domainResult, err = file.Open(domainFileName)
+die(err)
+defer domainResult.Close()
+
+targets := cli.String("target", cli.setHelp("扫描目标"))
+scanTargets := str.ParseStringToHosts(targets)
+if len(scanTargets) <= 0 {
+    die("empty target is not allowed")
+}
+
+ports = cli.String("ports", cli.setDefault("80,8080-8082,443"))
+scanPortWg := sync.NewSizedWaitGroup(10)
+
+// 处理指纹扫描的结果
+handleTarget = func(result) {
+    log.debug("found result: %v", result.String())
+    if result.IsOpen() {
+        log.info("scanned fingerprint %v", result.String())
+        portResult.WriteLine(sprintf("%24s   %6s    %s", str.HostPort(result.Target, result.Port), parseStr(result.State), result.GetServiceName()))
+    }
+}
+
+scanIPTargets = func(targetIP) {
+    scanPortWg.Add()
+
+    go func(){
+        defer scanPortWg.Done()
+
+        log.info("start to handle target ip: %v", targetIP)
+        res, err := servicescan.Scan(targetIP, ports)
+        if err != nil {
+            log.error("servicescan %v ports:%v failed: %s", targetIP, ports, err)
+            return
+        }
+
+        for result := range res {
+            handleTarget(result)
+        }
+    }()
+
+}
+
+scanDomainWg := sync.NewSizedWaitGroup(10)
+scanDomain = func(domain) {
+    scanDomainWg.Add()
+    go func{
+        defer scanDomainWg.Done()
+        defer fn{
+            err = recover()
+            if err != nil {
+                log.error("panic from scan Domain", err)
+            }
+        }
+        log.info("start to find subdomain for: %v", domain)
+        res, err := subdomain.Scan(domain, subdomain.recursive(true))
+        if err != nil {
+            log.error("subdomain scan[%s] failed: %s", domain, err)
+            return
+        }
+        for result := range res {
+            result.Show()
+            domainResult.WriteLine(result.ToString())
+            scanIPTargets(result.IP)
+        }
+    }
+}
+
+for _, target := range scanTargets {
+    if str.IsIPv4(target) {
+        scanIPTargets(target)
+    } else {
+        log.info("start to handle domain: %v", target)
+        scanDomain(target)
+    }
+}
+
+wg := sync.NewWaitGroup()
+wg.Add(1)
+go func {
+    defer wg.Done()
+    scanPortWg.Wait()
+}
+wg.Add(1)
+go func{
+    defer wg.Done()
+    scanDomainWg.Wait()
+}
+
+wg.Wait()

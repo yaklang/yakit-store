@@ -1,0 +1,10 @@
+author: "v1ll4n"
+module_file: "domain_to_fp.yak"
+
+params:
+  - name: domain
+    verbose: 基础域名
+    description: 想要扫描的基础域名
+    type: string
+  - name: concurrent
+    verbose: 并发
