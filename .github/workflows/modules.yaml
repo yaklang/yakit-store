@@ -1,10 +1,10 @@
 name: Go
 
-on: ["push", "pull-request"]
+on: ["push", "pull_request"]
 
 jobs:
   build_yakit:
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: echo ${{ github.ref }}
