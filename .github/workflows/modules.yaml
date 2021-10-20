@@ -23,3 +23,12 @@ jobs:
         with:
           name: yakit-resources.zip
           path: ./yakit-resources.zip
+      - name: Upload yakit-store to oss
+        uses: tvrcgo/upload-to-oss@master
+        with:
+          key-id: ${{ secrets.OSS_KEY_ID }}
+          key-secret: ${{ secrets.OSS_KEY_SECRET }}
+          region: oss-accelerate
+          bucket: yaklang
+          assets: |
+            ./yakit-resources.zip:/yak/yakit-resources.zip
