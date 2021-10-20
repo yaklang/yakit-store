@@ -1,0 +1,25 @@
+name: Go
+
+on: ["push", "pull-request"]
+
+jobs:
+  build_yakit:
+    runs-on: ubuntu
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo ${{ github.ref }}
+      - uses: papeloto/action
+        with:
+          files: yak_mitm yak_module yak_nmap ./sources.json
+          recursive: false
+          dest: yakit-resources.zip
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: yakit-resources.zip
+          path: ./yakit-resources.zip
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: yakit-resources.zip
+          path: ./yakit-resources.zip
