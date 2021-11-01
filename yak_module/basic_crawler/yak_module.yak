@@ -1,0 +1,78 @@
+yakit.AutoInitYakit()
+
+yakit.Info("开始解析参数")
+maxDepth = cli.Int("max-depth", cli.setDefault(4))
+concurrent = cli.Int("concurrent", cli.setDefault(50))
+maxLinks = cli.Int("max-links", cli.setDefault(10000))
+maxReqs = cli.Int("max-requests", cli.setDefault(2000))
+timeoutPerRequest = cli.Int("timeout", cli.setDefault(10))
+target = cli.String("target", cli.setDefault("www.baidu.com"))
+proxy = cli.String("proxy")
+ua = cli.String("user-agent", cli.setDefault(`Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36`))
+retry = cli.Int("retry", cli.setDefault(2))
+redirectTimes = cli.Int("redirectTimes", cli.setDefault(3))
+
+// 基础认证
+basicAuth = cli.Bool("basic-auth")
+basicAuthUser = cli.String(`basic-auth-user`)
+basicAuthPass = cli.String("basic-auth-pass")
+
+debug = cli.Bool("debug")
+if debug {
+    log.setLevel("debug")
+}
+
+// crawler.forbiddenFromParent()
+disallowFromParent = cli.Bool("disallow-parent")
+
+if debug {
+    dump({
+        "retry": retry,
+        "redirectTimes": redirectTimes,
+        "proxy": proxy,
+    })
+}
+
+opts = [
+    crawler.maxDepth(maxDepth),
+    crawler.maxRequest(maxReqs),
+    crawler.maxUrls(maxLinks),
+    crawler.timeout(timeoutPerRequest),
+    crawler.userAgent(ua/*type: string*/),
+    crawler.maxRetry(retry),
+    crawler.maxRedirect(redirectTimes),
+]
+
+appendOpt = func(opt) {
+    opts = append(opts, opt)
+}
+
+if basicAuth {
+    appendOpt(crawler.basicAuth(basicAuthUser, basicAuthPass))
+}
+
+if proxy != "" {
+    appendOpt(crawler.proxy(proxy))
+}
+
+yakit.Info("解析参数成功")
+
+yakit.Info("开始准备进行爬虫：%v", target)
+
+yakit.EnableWebsiteTrees(target)
+res, err := crawler.Start(target,opts...)
+if err != nil {
+    yakit.Error(err.Error())
+    die(err)
+}
+
+yakit.Info("正在获取结果")
+for r := range res {
+    rsp, err := r.Response()
+    if err != nil {
+        continue
+    }
+    yakit.SaveHTTPFlow(r.Url(), r.Request(), rsp)
+}
+
+yakit.Info("基础爬虫执行结束")

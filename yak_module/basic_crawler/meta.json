@@ -1,0 +1,65 @@
+{
+    "name": "基础爬虫",
+    "tags": [
+        "crawler",
+        "basic"
+    ],
+    "help": "一个简单的爬虫模块，会把爬虫爬到有效的请求响应过滤，并存到数据库中。",
+    "author": "v1ll4n",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "爬虫扫描目标",
+            "description": "设置爬虫的目标信息，可以支持比较自由的格式，支持逗号分隔，可以输入 IP / 域名 / 主机名 / URL ",
+            "type": "string",
+            "default_value": ""
+        },
+        {
+            "name": "proxy",
+            "verbose": "设置代理",
+            "description": "设置代理",
+            "type": "string",
+            "default_value": ""
+        },
+        {
+            "name": "timeout",
+            "verbose": "超时时间",
+            "description": "每个请求的最大超时时间",
+            "type": "uint",
+            "default_value": "10"
+        },
+        {
+            "name": "max-requests",
+            "verbose": "最大请求数",
+            "description": "本次爬虫最多发出多少个请求？（一般用于限制爬虫行为）",
+            "type": "uint",
+            "default_value": "2000"
+        },
+        {
+            "name": "max-links",
+            "verbose": "最大URL数",
+            "description": "爬虫获取到的最大量URL（这个选项一般用来限制无限制的爬虫，一般不需要改动）\n",
+            "type": "uint",
+            "default_value": "10000"
+        },
+        {
+            "name": "concurrent",
+            "verbose": "并发量",
+            "description": "爬虫的并发请求量（可以理解为线程数）",
+            "type": "uint",
+            "default_value": "50"
+        },
+        {
+            "name": "max-depth",
+            "verbose": "最大深度",
+            "description": "设置爬虫的最大深度（逻辑深度，并不是级数）",
+            "type": "uint",
+            "default_value": "4"
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
