@@ -73,7 +73,7 @@
         }
     ],
     "document": "document.md",
-    "general_module_verbose": "",
-    "general_module_key": "",
-    "is_general_module": false
+    "general_module_verbose": "基础爬虫",
+    "general_module_key": "basic-crawler",
+    "is_general_module": true
 }
