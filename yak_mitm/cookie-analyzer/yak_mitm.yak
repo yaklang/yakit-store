@@ -1,0 +1,52 @@
+# mirrorNewWebsitePath 每新出现一个网站路径，关于这个网站路径的第一个请求，将会在这里被传入回调
+mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    freq, err := fuzz.HTTPRequest(req, fuzz.https(isHttps))
+    die(err)
+
+    res, err := freq.Repeat(2).Exec(httpool.size(1))
+    if err != nil {
+        return
+    }
+
+    response = make([][]byte)
+    response = append(response, rsp)
+    for r := range res {
+        if r.ResponseRaw != nil {
+            response = append(response, r.ResponseRaw)
+        }
+    }
+
+    // 最低稳定性
+    similarity, _ = str.CalcTextMaxSubStrStability(response...)
+    if similarity <= 0.8 {
+        yakit_output(sprintf("页面不稳定[%v]，测试无意义", similarity))
+        continue
+    }
+
+    token = str.RandStr(30)
+    for _, cookie := range freq.GetCookieParams() {
+        result, err = cookie.Fuzz([token, 1, "true", "false", ""]...).Exec(httpool.https(isHttps), httpool.size(5))
+        if err != nil {
+            die("cookie fuzz error: %v", err)
+            continue
+        }
+        
+        for requestResult = range result {
+            if requestResult.ResponseRaw == nil {
+                return
+            }
+
+            percent, _ = str.CalcTextMaxSubStrStability(response[0], requestResult.ResponseRaw)
+            yakit_output({
+                "Cookie-Key": cookie.Name(),
+                "Cookie-Value": sprint(cookie.Value()),
+                // "Cookie": requestResult.Request.Header["Cookie"],
+                "相对稳定性": percent,
+                "url": requestResult.Url,
+                "原长度":  len(response[0]),
+                "测试长度": len(requestResult.ResponseRaw),
+            })
+        }        
+    }
+    
+}

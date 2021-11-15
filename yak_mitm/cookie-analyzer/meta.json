@@ -1,0 +1,14 @@
+{
+    "name": "Cookie越权检测小助手",
+    "tags": [
+        ""
+    ],
+    "help": "",
+    "author": "",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
