@@ -15,7 +15,7 @@
             "dir": "yak_module"
         },
         {
-            "name": "yak-mitm",
+            "name": "mitm",
             "verbose_cn": "Yak 中间人劫持插件",
             "verbose_en": "Yak MITM Module",
             "external": false,
