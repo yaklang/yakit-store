@@ -1,0 +1,476 @@
+# mitm plugin template
+yakit_output(MITM_PARAMS)
+
+RATIO_BOUNDARY = parseFloat(MITM_PARAMS["ratio"])
+URLKEYWORD = MITM_PARAMS["url_keyword"]
+if URLKEYWORD == undefined {
+    URLKEYWORD = ""
+}
+
+
+paramsRaw = `debug
+eid
+appEntrance
+needLogin
+offerId
+category
+pid
+cce
+lower
+ids
+last
+appID
+requestFrom
+appVersion
+widgetId
+dest
+client-request-id
+ltu
+protocol
+get
+uid
+connect_redirect
+result
+method
+preview
+exps
+redirect_url
+type
+step
+version
+start
+add
+fl
+channel_id
+s
+updateType
+subject
+index
+lg
+y
+ie
+lid
+higher
+channel
+device
+link
+fid
+backurl
+logintype
+error
+_return
+err_num
+di
+aid
+tMain
+img
+email
+src
+castk
+logtype
+kid
+action
+appOS
+tFirstPaint
+m
+edit
+offline_redirect
+iid
+locale
+login
+rule
+view
+apps
+ru
+title
+nonce
+timestamp
+redir
+api
+group
+namespace
+categoryId
+opi
+sid
+load
+test
+returnUrl
+redirectUrl
+passwd
+zid
+name
+gateway
+height
+new
+col
+input
+par
+to
+address
+next
+back
+ccd
+op
+roomid
+useragent
+sd
+data
+is_diy
+dtm
+ustat
+return_to
+redirectType
+value
+key
+head
+rnd
+csource
+mkt
+memberId
+requestId
+CLIENT_VERSION
+site_key
+sdkVersion
+txnIttChnlId
+IdentityProvider
+serialID
+mode
+sr
+dpc
+theme
+redirect
+dataid
+msafed
+scene
+cateid
+batchFeedbackList
+Location
+SslSign
+oid
+reason
+pacc
+mid
+risk_platform
+tcn
+sessionId
+cmi
+ipType
+v
+area
+query
+sign
+gazsvy
+currentPage
+acct
+tc
+ocid
+flag
+target
+auth_token
+vt
+pageSize
+vid
+maxAppVersion
+cnzz_eid
+cfv
+mail
+app_id
+search
+menuId
+tmsc
+ticket
+appURL
+xid
+h
+href
+cpl
+nid
+showp
+vp
+userType
+lzv
+umidToken
+size
+f
+page_type
+pss
+x
+drs
+ufrm
+compatMode
+selected_date
+prot
+cid
+umuuid
+r
+clientVersion
+bp
+siteId
+ps
+do
+config
+referrer
+window
+country
+template
+password
+time
+last_name
+act
+cookie2
+ref
+offset
+n
+show
+pis
+p
+service
+rtc
+dl
+appkey
+q
+text
+tRecInPage
+url
+dg
+channelCode
+reference
+cookieSet
+token
+domain
+tid
+rurl
+plugin
+bizParams
+aspxerrorpath
+file
+dis
+code
+cb
+cna
+je
+charset
+psi
+signature
+ul
+redirect_uri
+user
+goto
+netType
+tbpm
+path
+t
+yid
+net
+count
+username
+pass
+serviceId
+psr
+filter
+continue
+message
+filename
+APP_NAME
+lang
+cdo
+ts
+site
+txnIttChnlCgyCode
+access_type
+pageId
+width
+redirectedfrom
+disableCDNResource
+app
+de
+limit
+auth
+tracelog
+useIp
+from_url
+example
+tpr
+userid
+dri
+post
+jid
+fromSite
+log
+ltr
+gslb
+origin
+ui_locales
+qid
+ver
+tag
+id
+bizType
+param
+osType
+source
+ari
+status
+keywords
+currentAppVersion
+gid
+entry
+reqVersion
+pcs
+ua
+keyword
+demo
+sceneCode
+red_tag
+page_name
+a
+out
+first_name
+fromu
+next_url
+utdid
+format
+sort
+x-client-SKU
+hostName
+CONTEXT_PATH
+appver
+ntime
+tab
+frame
+client_id
+risk_app
+save
+u
+jumpto
+scope
+cec
+loginid
+pver
+pathname
+host
+isMobile
+e
+sinaglobal
+dt
+risk_partner
+ip
+kdtId
+node
+cal
+k
+tPageJump
+appABI
+topic
+kdt_id
+chi
+state
+returl
+did
+_debug
+mobile
+client
+destUrl
+response_type
+web_id
+dmtrack_pageid
+comment
+rid
+site_id
+old
+history
+dc
+dai
+ajax
+show_back
+year
+tlm
+Position
+route_name
+from
+ar
+ant
+wid
+response_mode
+var
+tSessionRestored
+appName
+BACK_URL
+spm
+page
+z
+ti
+params
+methodName
+c
+uri
+x-client-ver
+order
+correlationId
+hid
+rb
+callback
+content
+dir
+type
+bid`
+
+awvsNxssStrike = ["id","action","page","name","f","url","email","file","title","code","q","user","token","t","c","data","mode","order","lang","p","key","status","start","charset","s","post","login","search","content","comment","step","ajax","debug","state","query","error","save","sort","format","tab","offset","edit","preview","filter","from","view","a","limit","do","plugin","theme","text","test","path","pass","dir","show","h","value","filename","redirect","year","group","template","subject","m","u","dest","uri","continue","window","next","reference","site","redir","link","goto","_debug","get","index","src","source","frame","config","new","old","var","rurl","return_to","_return","returl","last","load","mail","username","password","passwd","first_name","last_name","back","href","ref","input","out","net","host","address","auth","userid","auth_token","keyword","aid","bid","cid","did","eid","fid","gid","hid","iid","jid","kid","lid","mid","nid","oid","pid","qid","rid","sid","tid","uid","vid","wid","xid","yid","zid","cal","country","x","y","topic","head","higher","lower","width","height","add","result","log","demo","example","message"]
+
+paramsList = str.ParseStringToLines(paramsRaw)
+paramsList = append(paramsList, awvsNxssStrike...)
+paramsList = str.RemoveRepeat(paramsList)
+
+#--------------------------WORKSPACE-----------------------------
+__test__ = func() {
+    yakit_output({
+        "params_all": len(paramsList),
+    })
+
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "https://example.com")
+    if err != nil {
+        return
+    }
+    isHttps, url, reqRaw, rspRaw, body = results
+
+    mirrorNewWebsitePath(results...)
+}
+
+
+
+# mirrorNewWebsitePath 每新出现一个网站路径，关于这个网站路径的第一个请求，将会在这里被传入回调
+mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    if !str.Contains(url, URLKEYWORD) {
+        return
+    }
+
+    freq, err := fuzz.HTTPRequest(req, fuzz.https(isHttps))
+    die(err)
+
+    res, err := freq.FuzzGetParams(paramsList, "{{int(1)}}").Exec()
+    die(err)
+
+    for r = range res {
+        if r.Error != nil {
+            continue
+        }
+        responseBody, _ := str.ExtractBodyFromHTTPResponseRaw(r.ResponseRaw)
+        similarity, err = str.CalcTextMaxSubStrStability(body, responseBody)
+        if err != nil {
+            continue
+        }
+
+        if similarity <= RATIO_BOUNDARY {
+            yakit_output({
+                "origin_url": r.Url,
+                "param_position": "get-query",
+                "param_value": 1,
+                "similarity": similarity,
+            })
+        }
+    }
+
+    // freq.FuzzGetQuery
+}
+
+
