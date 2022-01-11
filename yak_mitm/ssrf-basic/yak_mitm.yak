@@ -1,0 +1,123 @@
+# mitm plugin template
+
+/*
+SSRF 检测需要针对特定参数，参数白名单在插件中展示了
+
+通常情况下，我们需要猜测这个参数是不是 SSRF 可能的参数
+
+1. 针对参数名？share wap url uri 等
+2. 针对参数值：http|https:// 开头的大概率可能，但是也不一定，如果参数以 /path/asdfasdf 为值开头，也可能存在问题
+
+如果上述条件两个满足一个，我们就可以认为，这个参数可能存在 SSRF 风险
+
+SSRF 检测也有一些情况
+
+1. 回显不出网        
+1. 回显出网          
+2. 无回显(出网)      
+3. 无回显(不出网)   
+4. FFMPEG（TODO）
+
+具体探测的时候，如果 Yakit 配置了公网平台的话，应该优先使用公网反连来探测 (risk.NewPublicReverseHTTPSUrl())
+
+发送的 Payload 也需要讲究
+
+1. 直接替换原值
+1. 尝试一些简单的 Payload 绕过方式
+
+*/
+
+#--------------------------WORKSPACE-----------------------------
+__test__ = func() {
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://127.0.0.1:8084/ssrf?url=http://www.baidu.com")
+    if err != nil {
+        return
+    }
+    isHttps, url, reqRaw, rspRaw, body = results
+
+    mirrorNewWebsitePathParams(results...)
+}
+
+availableSSRFParamNames = [
+    "share", "wap", "url", "link", "uri",
+    "src", "source", "redirect", "redirect_to",
+    "redirect*", "sourceurl", "u", "3g",
+    "web", "sourceurl", "sourceuri", "domain", 
+    "image", "imageurl",
+]
+
+# mirrorNewWebsitePathParams 每新出现一个网站路径且带有一些参数，参数通过常见位置和参数名去重，去重的第一个 HTTPFlow 在这里被调用
+mirrorNewWebsitePathParams = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    freq, err := fuzz.HTTPRequest(req, fuzz.https(isHttps))
+    die(err)
+
+    for _, param := range freq.GetCommonParams() {
+        // yakit_output(sprintf("start to test url[%v]'s param: %v[%v]", url, param.Name(), param.Position()))
+        paramName = param.Name()
+
+        originValue = param.Value()
+        if str.HasPrefix(sprint(type(originValue)), "[]") {
+            if originValue[0] != undefined {
+                originValue = sprint(originValue[0])
+            }else{
+                originValue = ""
+            }
+        } else {
+            originValue = sprint(originValue)
+        }
+
+        
+        if str.HasPrefix(originValue, "http://") || str.HasPrefix(originValue, "https://") || str.StringSliceContains(availableSSRFParamNames, str.ToLower(paramName)) {
+            msg = sprintf("SSRF基础测试: 参数名[%v] 参数原值[%v]", paramName, originValue)
+            yakit_output(msg)
+
+            token = risk.NewPublicReverseHTTPUrl(risk.type("ssrf"), risk.typeVerbose("SSRF出网"), risk.title("SSRF出网反连"))
+            if token == "" {
+                yakit_output("未配置 Yak Bridge 作为公网映射，无法获取带 Token 的 URL Callback")
+                continue
+                // 这里没有办法使用回显检测了
+            } 
+            msg := sprintf("SSRF 反连检测允许使用 URL: %v", token)
+            yakit_output(msg)
+            // 这里
+            rs, err := param.Fuzz(token).Exec(httpool.https(isHttps))
+            if err != nil {
+                yakit_output("SSRF 发送请求失败")
+                continue
+            }
+
+            for result = range rs {
+                if result.Error != nil {
+                    // 发送成功失败
+                    errMsg := sprintf("请求[%v]失败: %v", result.Url, result.Error)
+                    yakit_output(errMsg)
+                } else{
+                    tokenStr := risk.ExtractTokenFromUrl(token)
+                    if risk.HaveReverseRisk(tokenStr) {
+                        yakit_output("发现一个 SSRF HTTP 出网(公网)：" + tokenStr)
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+/*
+
+type palm/common/mutate.(FuzzHTTPRequestParam) struct {
+  Fields(可用字段):
+  StructMethods(结构方法/函数):
+  PtrStructMethods(指针结构方法/函数):
+      func Fuzz(v1 ...interface {}) return(mutate.FuzzHTTPRequestIf)
+      func IsCookieParams() return(bool)
+      func IsGetParams() return(bool)
+      func IsPostParams() return(bool)
+      func Name() return(string)
+      func Position() return(string)
+      func PositionVerbose() return(string)
+      func Repeat(v1: int) return(mutate.FuzzHTTPRequestIf)
+      func Value() return(interface {})
+}
+
+*/

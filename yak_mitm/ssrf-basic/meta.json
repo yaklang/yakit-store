@@ -1,10 +1,10 @@
 {
-    "name": "Cookie越权检测小助手",
+    "name": "SSRF HTTP Public",
     "tags": [
-        ""
+        "ssrf"
     ],
-    "help": "",
-    "author": "",
+    "help": "SSRF HTTP 公网检测",
+    "author": "v1ll4n",
     "module_file": "yak_mitm.yak",
     "params": null,
     "document": "document.md",
