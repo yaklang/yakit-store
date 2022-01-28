@@ -1,0 +1,102 @@
+yakit.AutoInitYakit()
+
+target = cli.String("target", cli.setDefault("uestc.edu.cn"))
+
+notRecursive = cli.Bool("not-recursive", cli.setHelp("设置是否递归爆破？"))
+wildcardToStop = cli.Bool("wildcard-to-stop") // 泛解析停止
+
+res, err := subdomain.Scan(target, subdomain.recursive(!notRecursive), subdomain.wildcardToStop(wildcardToStop))
+if err != nil {
+    yakit.Error("构建子域名扫描失败：%v", err)
+    die(err)
+}
+
+/**
+type palm/common/subdomain.(SubdomainResult) struct {
+      FromTarget: string  
+      FromDNSServer: string  
+      FromModeRaw: int  
+      IP: string  
+      Domain: string  
+      Tags: []string  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func Hash() return(string) 
+      func Show() 
+      func ToString() return(string) 
+}
+*/
+
+
+yakit.Info("开始准备处理子域名收集的结果")
+yakit.EnableTable("涉及C段表", ["涉及C段"])
+outputTableCClass = func(network) {
+    data = make(map[string]var)
+    data["涉及C段"] = network
+    yakit.TableData("涉及C段表", data)
+}
+yakit.EnableTable("子域名表", ["Domain", "IP"])
+outputTable = func(domain, ip) {
+    data = make(map[string]var)
+    data["Domain"] = domain
+    data["IP"] = ip
+    yakit.TableData("子域名表", data)
+}
+
+
+count = 0
+savedCount = 0
+mux = sync.NewLock()
+statusAddCount = func() {
+    mux.Lock()
+    defer mux.Unlock()
+
+    count++
+    yakit.StatusCard("已保存/已收集", str.f("%v/%v", savedCount, count))
+}
+statusSavedAddCount = func() {
+    mux.Lock()
+    defer mux.Unlock()
+
+    savedCount++
+    yakit.StatusCard("已保存/已收集", str.f("%v/%v", savedCount, count))
+}
+
+swg = sync.NewSizedWaitGroup(40)
+submitToDB = func(domain, ip) {
+    swg.Add()
+    go func{
+        defer swg.Done()
+        yakit.SaveDomain(domain, ip)
+        statusSavedAddCount()
+    }
+}
+
+ipCounter = make(map[string]int)
+cClassCollector = make(map[string]int)
+for result = range res {
+    ip = result.IP
+    if ipCounter[ip] == undefined {
+        ipCounter[ip] = 0
+    }
+    ipCounter[ip] ++
+    if ipCounter[ip] > 10 {
+        yakit.StatusCard(sprintf("IP:%v 解析数", ip), ipCounter[result.IP])
+    }
+
+    result.Show()
+    statusAddCount()
+    outputTable(result.Domain, result.IP)
+    network = str.IPv4ToCClassNetwork(result.IP)
+    network = network[0]
+    if cClassCollector[network] == undefined {
+        cClassCollector[network] = 0
+        outputTableCClass(network)
+    }
+    cClassCollector[network] ++
+    // yakit.StatusCard(sprintf("C段:%v 主机数", network), cClassCollector[network])
+    
+    submitToDB(result.Domain, result.IP)
+}
+
+swg.Wait()

@@ -1,0 +1,43 @@
+{
+    "name": "子域名收集",
+    "tags": [
+        "basic",
+        "subdomain"
+    ],
+    "help": "从各种角度寻找子域名（域传送+网站搜索+爆破）自动入库",
+    "author": "v1ll4n",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "域名",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "not-recursive",
+            "verbose": "禁用递归爆破",
+            "description": "",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "wildcard-to-stop",
+            "verbose": "泛解析马上停止",
+            "description": "",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "subdomain",
+    "general_module_key": "子域名收集",
+    "is_general_module": true
+}
