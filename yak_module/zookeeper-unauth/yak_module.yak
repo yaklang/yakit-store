@@ -1,0 +1,28 @@
+# 192.29.192.206 2181
+yakit.AutoInitYakit()
+
+target = cli.String("target")
+if target == "" {
+    yakit.Error("Empty Target")
+    return
+}
+
+port = cli.Int("port", cli.setDefault(2181))
+if port <= 0 {
+    yakit.Error("Port is invalid")
+    return
+}
+conn,err = tcp.Connect(target, port)
+if err != nil {
+    yakit.Error("Connect to %v failed: %v", target, err)
+}
+die(err)
+
+yakit.Info("write envi to %v", target)
+conn.Send("envi\r\n")
+
+yakit.Info("Start to waiting result")
+result, err := conn.RecvStringTimeout(3)
+if str.MatchAllOfSubString(result, "zookeeper.version=") {
+    yakit.StatusCard("Zookeeper未授权访问漏洞", str.HostPort(target, port))
+}
