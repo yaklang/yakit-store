@@ -1,0 +1,43 @@
+{
+    "name": "weblogic brute ",
+    "tags": [
+        "brute",
+        "weblogic"
+    ],
+    "help": "对weblogic 后台进行弱口令爆破",
+    "author": "sucre",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "users",
+            "verbose": "",
+            "description": "爆破用户",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "pwds",
+            "verbose": "",
+            "description": "密码字典",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
