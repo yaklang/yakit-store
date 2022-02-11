@@ -15,6 +15,20 @@
             "dir": "yak_module"
         },
         {
+            "name": "codec",
+            "verbose_cn": "Codec 模块",
+            "verbose_en": "Codec Module",
+            "external": false,
+            "dir": "yak_codec"
+        },
+        {
+            "name": "packet-hack",
+            "verbose_cn": "Packet 检查",
+            "verbose_en": "Packet Hack",
+            "external": false,
+            "dir": "yak_packet"
+        },
+        {
             "name": "mitm",
             "verbose_cn": "Yak 中间人劫持插件",
             "verbose_en": "Yak MITM Module",

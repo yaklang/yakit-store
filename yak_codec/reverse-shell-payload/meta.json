@@ -1,0 +1,14 @@
+{
+    "name": "生成反弹 Shell Payload",
+    "tags": [
+        ""
+    ],
+    "help": "",
+    "author": "anonymous",
+    "module_file": "handle.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
