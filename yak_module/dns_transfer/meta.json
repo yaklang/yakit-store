@@ -1,0 +1,33 @@
+{
+    "name": "dnsTransfer",
+    "tags": [
+        "dns"
+    ],
+    "help": "检测 dns服务器是否存在域传送漏洞",
+    "author": "sucre",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "ns",
+            "verbose": "nameserver",
+            "description": "需要监测的 nameserver 通过, 进行分割",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "domain",
+            "verbose": "域名",
+            "description": "需要域传送的 域名",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
