@@ -1,0 +1,42 @@
+{
+    "name": "Cookie 未授权与稳定性测试",
+    "tags": [
+        ""
+    ],
+    "help": "通过替换数据包中 Cookie 的值请求之后的内容与原数据的相似度来判断 “稳定性” / “相似度”，使用 sqlmap 字符串相似度比较算法。",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "request",
+            "verbose": "",
+            "description": "",
+            "type": "http-packet",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "response",
+            "verbose": "",
+            "description": "",
+            "type": "http-packet",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "isHttps",
+            "verbose": "",
+            "description": "",
+            "type": "bool",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
