@@ -1,0 +1,114 @@
+# packet hack plugin
+yakit.AutoInitYakit()
+
+/*
+本插件定义的函数(Hook)的参数来源于以下内容 
+1. HTTP History
+2. Repeater
+
+函数定义如下：
+func(requestRaw: []byte|string|url, responseBody: []byte, isHttps: bool)
+
+
+*/
+
+handle = func(requestRaw, responseRaw, isHttps) {
+    yakit.Info("输出原数据包")
+    yakit.Text(requestRaw)
+    yakit.Text(codec.EncodeToHex(requestRaw))
+
+    filterCookieKey = func(key) {
+        return str.MatchAnyOfGlob(
+            key, 
+            "Hm_*",
+            "_ga", "_gid", 
+            "*_gtag_*",
+            "__utm?",
+            "aliyungf_tc",
+            "UM_*",
+            "CNZZDATA*",
+            "__cfduid",
+            "_gh_sess",
+        )
+    }
+
+    COOKIE_KEY = "COOKIE"
+    VALUE = "原 COOKIE 值"
+    REPLACED_VALUE = "替换后 COOKIE 值"
+    SIMILARITY = "替换后响应相似度"
+    REASON = "未测试原因"
+    feedbackData = func(k, v, r, s, reason) {
+        data = make(map[string]var)
+        data[COOKIE_KEY] = k
+        data[VALUE] = v
+        data[REPLACED_VALUE] = r
+        data[SIMILARITY] = s
+        data[REASON] = reason
+        yakit.TableData("COOKIE测试结果", data)
+    }
+
+    yakit.EnableTable("COOKIE测试结果", [COOKIE_KEY, VALUE, REPLACED_VALUE, SIMILARITY, REASON])
+
+    freq, err := fuzz.HTTPRequest(requestRaw, fuzz.https(isHttps))
+    if err != nil {
+        yakit.Info("Build Fuzz HTTPRequest failed")
+        return
+    }
+
+    req, err = freq.GetOriginHTTPRequest()
+    if err != nil {
+        die(err)
+    }
+
+    filteredCookie = make(map[string]var)
+
+    originFreqResult, err := freq.ExecFirst()
+    die(err)
+    // desc(originFreqResult)
+    originUrl = println(originFreqResult.Url)
+    // println(string(originFreqResult.ResponseRaw))
+    originResponseRaw = originFreqResult.ResponseRaw // bytes
+
+    cookieAll = str.Join(req.Header["Cookie"], "; ")
+    for _, kvp := range str.Split(cookieAll, ";") {
+        kvp = str.TrimSpace(kvp)
+        result = str.SplitN(kvp, "=", 2)
+        if len(result) <= 1 {
+            continue
+        }
+        key, value = result[0], result[1]
+        if filterCookieKey(key) {
+            feedbackData(key, value, "", "", "常见追踪用户数据的 COOKIE /被忽略")
+            filteredCookie[key] = value
+            continue
+        }
+        printf("KEY: %v VALUE: %v\n", key, value)
+        replaced := str.RandStr(len(value))
+        secondResult, err := freq.FuzzCookie(key, replaced).ExecFirst()
+        if secondResult == nil {
+            feedbackData(key, value, replaced, "", sprintf(`执行替换后请求错误:%v`, err))
+            continue
+        }
+        secondResponseRaw = secondResult.ResponseRaw
+        similarity, err := str.CalcTextMaxSubStrStability(originResponseRaw, secondResponseRaw)
+        if err != nil {
+            feedbackData(key, value, replaced, "", sprintf(`计算文本相似度失败:%v`, err))
+            continue
+        }
+        feedbackData(key, value, replaced, sprintf("%.4f",similarity), "-")
+        printf("SIMILARITY: %.4f\n", similarity)
+    }
+}
+
+
+__test__ = func() {
+    handle([]byte(`GET / HTTP/1.1
+Host: www.baidu.com
+Cookie: a=1123123; PHPSESSION=12312312;
+
+`), nil, false)
+}
+
+if YAK_MAIN {
+    __test__()
+}
