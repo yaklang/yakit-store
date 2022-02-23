@@ -1,0 +1,14 @@
+{
+    "name": "Java Runtime Exec Payload 生成器",
+    "tags": [
+        ""
+    ],
+    "help": "",
+    "author": "",
+    "module_file": "handle.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

@@ -1,0 +1,25 @@
+yakit.AutoInitYakit()
+
+log.setLevel("info")
+nameServer = str.SplitAndTrim(cli.String("ns", cli.setHelp("spec nameserver using , to split")),",")
+
+target = cli.String("domain"/*type: string*/, cli.setHelp("domain"))
+
+
+for i,v = range nameServer{
+     yakit.Info("trying to sending dns axfr to  %s",v)
+     dnsMsg = dns.QuertAxfr(target,dns.dnsServers(v))
+     if len(dnsMsg) > 0 {
+         yakit.StatusCard("dns Transfer vul nameserver ",v)
+
+         for di,dv = range dnsMsg{
+             println(dv)
+         }
+         
+     }
+
+     
+}
+
+
+yakit.Info("done")

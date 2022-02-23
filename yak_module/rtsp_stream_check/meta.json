@@ -1,0 +1,24 @@
+{
+    "name": "RTSP 视频流地址传输检测",
+    "tags": [
+        ""
+    ],
+    "help": "探测RTSP是否被运行，并尝试获取RTSP的视频流传输地址",
+    "author": "Murkfox",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "IP",
+            "description": "",
+            "type": "",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
