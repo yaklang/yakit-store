@@ -1,0 +1,16 @@
+{
+    "name": "基础 SQL 注入检测：No Protection",
+    "tags": [
+        "sql",
+        "sql-injection",
+        "mitm"
+    ],
+    "help": "针对无任何保护的情况进行基础 SQL 注入检测",
+    "author": "v1ll4n",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
