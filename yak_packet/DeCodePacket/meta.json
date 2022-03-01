@@ -1,0 +1,14 @@
+{
+    "name": "DeCodePacket",
+    "tags": [
+        "教程"
+    ],
+    "help": "对加密流量的进行解密",
+    "author": "sucre",
+    "module_file": "handle.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

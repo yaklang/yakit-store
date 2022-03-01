@@ -1,0 +1,35 @@
+# packet hack plugin
+
+/*
+本插件定义的函数(Hook)的参数来源于以下内容 
+1. HTTP History
+2. Repeater
+
+Hook I/O 的输入输出均可用
+1. yakit_status
+2. yakit_output
+3. yakit_save  
+
+函数定义如下：
+func(requestRaw: []byte|string|url, responseBody: []byte, isHttps: bool)
+*/
+
+MCode = func(data){
+  yakit.Markdown(sprintf("%s%s","```\n",string(data)))
+}
+
+handle = func(requestRaw, responseRaw, isHttps) {
+
+   headers, body = str.SplitHTTPHeadersAndBodyFromPacket(responseRaw)
+   MCode(responseRaw)
+   ddata,err = codec.DecodeBase64(str.Trim(string(body), `"`/*type: string*/))
+   die(err)
+   content,err = codec.AESCBCDecrypt([]byte("imccpsy,tffhbgsx"), codec.ZeroUnPadding(ddata/*type: bytes*/)/*type: any*/, []byte("imccpsy,tffhbgsx")/*type: bytes*/)
+   die(err)
+   MCode(content)
+}
+
+
+__test__ = func() {
+    # run your testcase!
+}
