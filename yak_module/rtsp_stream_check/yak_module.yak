@@ -1,0 +1,63 @@
+// 设置日志的级别，方便我们看到 TCP 库的一些信息输出
+yakit.AutoInitYakit()
+loglevel("info")
+target = cli.String("target")
+ip, port, _ = str.ParseStringToHostPort(target)
+if ip == "" {
+    ip = target
+}
+if port <= 0 {
+    port = 554
+}
+
+data2 = "OPTIONS rtsp://"+ ip + "/stream1 RTSP/1.0\r\nCSeq: 2\r\n\r\n"
+yakit.Info(data2)
+
+yakit.Info("Start to Connect %v:%v", ip, port)
+conn, err := tcp.Connect(ip, port)
+if err != nil {
+    yakit.Error("Connect ERROR: %v", err)
+    die(err)
+}
+
+conn.Send(data2)
+flag= 0
+resp = conn.RecvStringTimeout(5)
+result = make(map[string]var)
+if len(resp) > 0 {
+    yakit.Info("RTSP has been opened")
+    result["ip"] = ip
+    result["port"] = "554"
+    stream_address = [
+        "/Streaming/Channels/1",
+        "/ch1/main/av_stream",
+        "/cam/realmonitor?channel=1&subtype=0",
+        "/1/D1",
+        "/1/h264major",
+        "/1/h264minor",
+        "/media/video1/multicast",
+        "/h264",
+        "/mpeg4",
+        "/video1",
+    ]
+    for i,n = range stream_address {
+        data  = "OPTIONS rtsp://"+ ip + n + " RTSP/1.0\r\nCSeq: 2\r\n\r\n"
+        conn.Send(data)
+        resp_1 = conn.RecvStringTimeout(5)
+        println(resp_1[0])
+        if re.Match(`RTSP/1.0 (200|401)`, resp_1[0]){
+            stream = "rtsp://"+ ip + n
+            flag = 1
+            result["stream_address"] = stream
+            break  
+            } 
+    }
+    if flag == 1 {
+        yakit.Info("Streaming media transport address has been found")
+        yakit.EnableTable("Output", ["ip", "port","stream_address"])
+        yakit.Output(yakit.TableData("Output", result))
+    }
+
+} else {
+    yakit.Error("RTSP does not run on port 554")
+}

