@@ -1,0 +1,33 @@
+{
+    "name": "ICP备案查询",
+    "tags": [
+        ""
+    ],
+    "help": "通过域名查询备案信息，或通过公司名查询名下备案网站",
+    "author": "sucre",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "company",
+            "verbose": "目标公司名",
+            "description": "目标公司全称，注意大括号是中文大括号",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "domain",
+            "verbose": "目标域名",
+            "description": "目标域名，不要带www",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

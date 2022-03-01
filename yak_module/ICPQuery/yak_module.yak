@@ -1,0 +1,75 @@
+yakit.AutoInitYakit()
+
+domain = cli.String("domain")
+company = cli.String("company")
+
+func postRequest(url,data,content_type,token){
+    url = "https://hlwicpfwc.miit.gov.cn/icpproject_query/api/" + url
+    rsp, err := http.Post(
+        url,
+        http.body(data),
+        http.header("Content-Type", content_type),
+        http.header("Origin", "https://beian.miit.gov.cn/"),
+        http.header("Referer", "https://beian.miit.gov.cn/"),
+        http.header("token", token),
+        http.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"),
+    )
+    die(err)
+    raw, err := io.ReadAll(rsp.Body)
+    die(err)
+    return string(raw)
+
+}
+
+if domain != ""{
+    timeStamp = sprint(time.Now().Unix())
+    authKey = codec.Md5("testtest"+timeStamp)
+    data = "authKey="+authKey+"&timeStamp="+timeStamp
+    yakit.Info("开始通过域名查询备案信息")
+    resp = postRequest("auth", data, "application/x-www-form-urlencoded;charset=UTF-8", "0")
+    token = json.loads(resp)["params"]["bussiness"]
+    data2 = `{"pageNum":"","pageSize":"","unitName":"`+domain+`"}`
+    query_resp = postRequest("icpAbbreviateInfo/queryByCondition",data2,"application/json;charset=UTF-8",token)
+
+    query_resp_json = json.loads(query_resp)
+
+    yakit.Info(query_resp)
+
+    yakit.EnableTable(domain, ["域名", "备案号","企业名称","企业性质","限制访问"])
+    data = make(map[string]var)
+    data["域名"] = query_resp_json.params.list[0].domain
+    data["备案号"] = query_resp_json.params.list[0].serviceLicence
+    data["企业名称"] = query_resp_json.params.list[0].unitName
+    data["企业性质"] = query_resp_json.params.list[0].natureName
+    data["限制访问"] = query_resp_json.params.list[0].limitAccess
+    yakit.Output(yakit.TableData(domain, data))
+}
+
+if company != ""{
+    timeStamp = sprint(time.Now().Unix())
+    authKey = codec.Md5("testtest"+timeStamp)
+    data = "authKey="+authKey+"&timeStamp="+timeStamp
+    yakit.Info("开始通过公司名查询域名列表")
+    resp = postRequest("auth", data, "application/x-www-form-urlencoded;charset=UTF-8", "0")
+    token = json.loads(resp)["params"]["bussiness"]
+    data2 = `{"pageNum":"","pageSize":"","unitName":"`+company+`"}`
+    
+    query_resp = postRequest("icpAbbreviateInfo/queryByCondition",data2,"application/json;charset=UTF-8",token)
+
+    query_resp_json = json.loads(query_resp)
+
+    yakit.Info(query_resp)
+    count = query_resp_json.params.total
+    yakit.EnableTable(company, ["域名", "备案号","企业名称","企业性质","限制访问"])
+    for i=0;i<count;i++{
+        data = make(map[string]var)
+        data["域名"] = query_resp_json.params.list[i].domain
+        data["备案号"] = query_resp_json.params.list[i].serviceLicence
+        data["企业名称"] = query_resp_json.params.list[i].unitName
+        data["企业性质"] = query_resp_json.params.list[i].natureName
+        data["限制访问"] = query_resp_json.params.list[i].limitAccess
+        yakit.Output(yakit.TableData(company, data))
+    }
+
+}
+
