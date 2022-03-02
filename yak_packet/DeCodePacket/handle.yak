@@ -18,13 +18,15 @@ MCode = func(data){
   yakit.Markdown(sprintf("%s%s","```\n",string(data)))
 }
 
+
+
 handle = func(requestRaw, responseRaw, isHttps) {
 
    headers, body = str.SplitHTTPHeadersAndBodyFromPacket(responseRaw)
    MCode(responseRaw)
    ddata,err = codec.DecodeBase64(str.Trim(string(body), `"`/*type: string*/))
    die(err)
-   content,err = codec.AESCBCDecrypt([]byte("imccpsy,tffhbgsx"), codec.ZeroUnPadding(ddata/*type: bytes*/)/*type: any*/, []byte("imccpsy,tffhbgsx")/*type: bytes*/)
+   content,err = codec.AESCBCDecrypt([]byte("**********"), codec.ZeroUnPadding(ddata/*type: bytes*/)/*type: any*/, []byte(""**********")/*type: bytes*/)
    die(err)
    MCode(content)
 }
