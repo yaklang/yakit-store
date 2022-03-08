@@ -1,0 +1,114 @@
+{
+    "name": "目录爆破",
+    "tags": [
+        "web"
+    ],
+    "help": "对web路径进行爆破",
+    "author": "sucre",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "concurrent",
+            "verbose": "并发量",
+            "description": "httpool的并发量",
+            "type": "uint",
+            "default_value": "50",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "timeout",
+            "verbose": "超时时间",
+            "description": "http请求的超时时间",
+            "type": "uint",
+            "default_value": "5",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "proxy",
+            "verbose": "代理",
+            "description": "设置代理",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描目标",
+            "description": "设置目标",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "targets",
+            "verbose": "扫描文件",
+            "description": "设置需要扫描的目标文件",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "https",
+            "verbose": "https参数",
+            "description": "设置https扫描",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "head",
+            "verbose": "设置不用head方式扫描",
+            "description": "默认使用head扫描",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "redirectTimes",
+            "verbose": "重定向次数",
+            "description": "设置重定向的次数",
+            "type": "uint",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "ef",
+            "verbose": "设置不扫描的路径",
+            "description": "设置不扫描的字典",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "debug",
+            "verbose": "debug模式",
+            "description": "",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "file",
+            "verbose": "目录字典",
+            "description": "设置扫描的目录字典 可以参考  https://github.com/insightglacier/Dictionary-Of-Pentesting",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

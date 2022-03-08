@@ -1,0 +1,142 @@
+yakit.AutoInitYakit()
+// 字典参考  https://github.com/insightglacier/Dictionary-Of-Pentesting
+yakit.Info("开始解析参数")
+log.Info("开始解析参数")
+concurrent = cli.Int("concurrent", cli.setDefault(50))
+timeoutPerRequest = cli.Int("timeout", cli.setDefault(5))
+target = cli.Host("target")
+targets = cli.LineDict("targets"/*type: string*//*type ...cli.setHelp|cli.setDefault*/)
+etarget = cli.LineDict("etarget"/*type ...cli.setHelp|cli.setDefault*/)
+proxy = cli.String("proxy")
+cookie = cli.String("cookie")
+isHEAD  = cli.Bool("head"/*type ...cli.setHelp|cli.setDefault*/,cli.setDefault(false))
+ua = cli.String("user-agent", cli.setDefault(`Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36`))
+retry = cli.Int("retry", cli.setDefault(2))
+redirectTimes = cli.Int("redirectTimes", cli.setDefault(2))
+isHTTPS = cli.Bool("https"/*type ...cli.setHelp|cli.setDefault*/,cli.setDefault(false))
+dir = cli.LineDict("file",/*type ...cli.setHelp|cli.setDefault*/)
+edir = cli.LineDict("ef", /*type ...cli.setHelp|cli.setDefault*/)
+
+
+for _,vt = range target {
+    targets = append(targets,vt)
+}
+
+debug = cli.Bool("debug")
+if debug {
+    log.setLevel("debug")
+}else{
+    log.setLevel("info")
+}
+
+
+
+//对target 进行去重处理
+// targets = x.RemoveRepeat(append(targets,target))
+
+//对目标或者字典进行处理 排除，去重
+excludeDict = func (input , exclude){
+    rData := []string{}
+
+    for _,vh = range input{
+
+        flag = true
+        for _,ve = range exclude {
+            if vh == ve{
+                flag = false
+                break
+            }
+        }   
+        if flag{
+            rData = append(rData,vh)
+        }
+    }
+    return x.RemoveRepeat(rData) //对字典进行去重
+}
+
+
+targets = excludeDict(targets,etarget)
+
+
+yakit.Info("解析参数成功")
+
+log.Info("解析参数成功")
+yakit.Info("开始准备进行路径扫描: %v", target)
+
+log.Info("开始准备进行路径扫描: %v", target)
+
+// if len(dir) == 0{
+//     dir = fuzz.Strings("{{x(dis)}}")
+// }
+
+dir = excludeDict(dir/*type: any*/,edir)
+
+
+appendOpt = func(opt) {
+    opts = append(opts, opt)
+}
+
+
+
+opts = [
+    httpool.https(isHTTPS/*type: bool*/),
+    httpool.redirectTimes(redirectTimes),
+    httpool.perRequestTimeout(timeoutPerRequest),
+    httpool.size(concurrent),
+]
+
+appendOpt = func(opt){
+    opts = append(opts,opt)
+}
+
+
+if proxy != "" {
+    appendOpt(httpool.proxy(proxy))
+}
+
+
+
+if isHEAD {
+    baseHttp = `GET /{{params(dir)}} HTTP/1.1
+    Host: {{params(target)}}`
+
+   
+}else{
+    baseHttp = `HEAD /{{params(dir)}} HTTP/1.1
+    Host: {{params(target)}}`
+}
+
+for _,tv =range target {
+yakit.EnableWebsiteTrees(tv)
+}
+
+
+ch,err = httpool.Pool(baseHttp,httpool.fuzzParams({"dir":dir,"target":targets}),opts...)
+
+
+die(err)
+
+checkFound = func(rst) {
+    // 检测
+    if rst.Response.StatusCode == 200 {
+        log.Info("found %s",rst.Url)
+
+        yakit.SaveHTTPFlow(rst.Url, rst.Request, rst.Response)
+        yakit.Info("found %s",rst.Url)
+        return
+    }
+
+    if rst.response.StatusCode == 302 {
+
+    }
+
+}
+
+
+for result = range ch {
+    if result.Error  != nil {
+        continue
+    }
+    log.debug(result.Url)
+    checkFound(result)
+}
