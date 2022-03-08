@@ -291,7 +291,7 @@ mirrorNewWebsitePathParams = func(isHttps /*bool*/, url /*string*/, req /*[]byte
                     risk.type("sqlinjection"), risk.payload(codecPayload), risk.parameter(param.Name()),
                     risk.details({
                         "url": result.Url,
-                        "responseRaw": codec.StrconvQuote(string(rresultes.ResponseRaw)),
+                        "responseRaw": codec.StrconvQuote(string(result.ResponseRaw)),
                         "payload": codecPayload,
                         "positive_payload": codecPayload,
                         "negative_payload": codecPayload,
