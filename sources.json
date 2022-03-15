@@ -36,11 +36,11 @@
             "dir": "yak_mitm"
         },
         {
-            "name": "nmap",
-            "verbose_cn": "Nmap 指纹插件",
-            "verbose_en": "Nmap Fingerprint Module",
+            "name": "port-scan",
+            "verbose_cn": "服务扫描插件",
+            "verbose_en": "Service Port Scan Module",
             "external": false,
-            "dir": "yak_nmap"
+            "dir": "yak_portscan"
         }
     ]
 }

@@ -1,0 +1,35 @@
+{
+    "name": "Web 基础爬虫：表单与上传文件检测",
+    "tags": [
+        "打点",
+        "信息收集",
+        "爬虫"
+    ],
+    "help": "对端口扫描扫描到的网站进行自动化爬虫，分析页面内表单与参数",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "8080",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "cybertunnel.run",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

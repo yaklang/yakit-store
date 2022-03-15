@@ -1,0 +1,140 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+/*
+本插件定义的函数主要用于端口扫描的额外扩展
+
+函数定义如下：
+func(result *fp.MatchResult)
+
+// 详细结构体定义与内容见模版结尾
+// 这里最关键的是，如果对扫描出的结果有疑问，需要对 MatchResult 进行修改，应该直接
+// 对变量.Field 进行修改。
+
+DEMO:
+
+handle = func(result) {
+    if result.Fingerprint != nil {
+        if result.Port == 80 && result.GetServiceName() == "" {
+            result.Fingerprint.ServiceName = "http"
+        }
+    }
+}
+
+*/
+
+/*
+type palm/common/crawler.(req) struct {
+  Fields(可用字段): 
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func AbsoluteURL(v1: string) return(string) 
+      func Hash() return(string) 
+      func IsForm() return(bool) 
+      func IsLoginForm() return(bool) 
+      func IsUploadForm() return(bool) 
+      func Request() return(*http.Request) 
+      func RequestRaw() return([]uint8) 
+      func Response() return(*http.Response, error) 
+      func ResponseBody() return([]uint8) 
+      func Url() return(string) 
+}
+*/
+
+enableFormTableOnce = sync.NewOnce()
+LOGINFORM = "URL 分析"
+addLoginForm = func(req /*crawler.req*/) {
+    enableFormTableOnce.Do(func() {
+        yakit.EnableTable(LOGINFORM, [
+            "URL", "登录表单", "上传表单", "其他表单", "GET 参数", "POST 参数",
+        ])
+    })
+    yakit.Info("添加登陆表单：%v", req.Url())
+    data = make(map[string]var)
+    data["URL"] = req.Url()
+    data["登录表单"] = x.If(req.IsLoginForm(), "Yes", "")
+    data["上传表单"] = x.If(req.IsUploadForm(), "Yes", "")
+    data["其他表单"] = x.If(!((req.IsUploadForm() || req.IsLoginForm()) && req.IsForm()), "Yes", "")
+    freq, err = fuzz.HTTPRequest(req.RequestRaw())
+    if freq != nil{
+        names = x.Map(freq.GetGetQueryParams(), func(i){return i.Name()})
+        if len(names) > 0 {
+            data["GET 参数"] = sprintf("%v", names)
+        }
+
+        names = x.Map(freq.GetPostParams(), func(i){return i.Name()})
+        if len(names) > 0 {
+            data["POST 参数"] = sprintf("%v", names)
+        }
+    }
+    yakit.TableData(LOGINFORM, data)
+}
+
+handleReq = func(req, match) {
+    if req == nil {
+        return
+    }
+
+    addLoginForm(req) 
+}
+
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    // 匹配结果
+    if result.IsOpen() && result.Fingerprint != nil && len(result.Fingerprint.HttpFlows) > 0 {
+        res, err = crawler.Start(
+            str.HostPort(result.Target, result.Port), crawler.maxRequest(50),
+            crawler.autoLogin("admin", "password"), crawler.urlRegexpExclude(`(?i).*?\/?(logout|reset|delete|setup).*`),
+        )
+        die(err)
+
+        for crawlerReq = range res {
+            handleReq(crawlerReq, result)
+        }
+    }
+}
+
+/*
+// 具体定义如下：
+type palm/common/fp.(MatchResult) struct {
+      Target: string  
+      Port: int  
+      State: fp.PortState  
+      Reason: string  
+      Fingerprint: *fp.FingerprintInfo  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func GetBanner() return(string) 
+      func GetCPEs() return([]string) 
+      func GetDomains() return([]string) 
+      func GetHtmlTitle() return(string) 
+      func GetProto() return(fp.TransportProto) 
+      func GetServiceName() return(string) 
+      func IsOpen() return(bool) 
+      func String() return(string) 
+}
+
+
+type palm/common/fp.(FingerprintInfo) struct {
+      IP: string  
+      Port: int  
+      Proto: fp.TransportProto  
+      ServiceName: string  
+      ProductVerbose: string  
+      Info: string  
+      Version: string  
+      Hostname: string  
+      OperationVerbose: string  
+      DeviceType: string  
+      CPEs: []string  
+      Raw: string  
+      Banner: string  
+      CPEFromUrls: map[string][]*webfingerprint.CPE  
+      HttpFlows: []*fp.HTTPFlow  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func FromRegexp2Match(v1: *regexp2.Match) 
+}
+*/
+
