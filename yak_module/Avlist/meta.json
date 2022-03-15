@@ -1,0 +1,24 @@
+{
+    "name": "杀软识别",
+    "tags": [
+        ""
+    ],
+    "help": "杀软识别",
+    "author": "Alex-null",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "process",
+            "verbose": "进程列表",
+            "description": "获取进程列表：cmd执行tasklist /svc",
+            "type": "text",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
