@@ -1,4 +1,4 @@
-# [yak]子域名收集 's Document
+# [yak]寻找子域名 's Document
 
 Author: v1ll4n
 
