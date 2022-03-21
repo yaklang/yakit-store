@@ -1,0 +1,19 @@
+# codec plugin
+
+/*
+Codec Plugin 可以支持在 Codec 中自定义编码解码，自定义 Bypass 与字符串处理函数
+
+函数定义非常简单
+
+func(i: string) string
+*/
+
+handle = func(origin /*string*/) {
+    # handle your origin str
+    slice := str.Split(origin, "\n")
+    for i := range slice {
+        j := randn(0,i + 1)
+        slice[i], slice[j] = slice[j], slice[i]
+    }
+    return str.Join(slice, "\n")
+}

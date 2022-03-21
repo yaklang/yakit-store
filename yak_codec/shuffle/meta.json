@@ -1,0 +1,14 @@
+{
+    "name": "按行打乱",
+    "tags": [
+        ""
+    ],
+    "help": "按行打乱数据",
+    "author": "TimWhite",
+    "module_file": "handle.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
