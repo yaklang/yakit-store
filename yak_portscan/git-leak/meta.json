@@ -1,0 +1,33 @@
+{
+    "name": "Git Leak Detection [ScanPort]",
+    "tags": [
+        "git-leak"
+    ],
+    "help": "Git 源码泄漏",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "codemirror.net",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "Git Leak Detection [ScanPort]",
+    "general_module_key": "Git Leak Detection [ScanPort]",
+    "is_general_module": true
+}

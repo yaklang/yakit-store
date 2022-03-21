@@ -15,6 +15,15 @@
             "default_value": "",
             "required": true,
             "group": ""
+        },
+        {
+            "name": "port",
+            "verbose": "端口",
+            "description": "",
+            "type": "",
+            "default_value": "",
+            "required": false,
+            "group": ""
         }
     ],
     "document": "document.md",

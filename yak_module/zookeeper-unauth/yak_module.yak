@@ -23,6 +23,13 @@ conn.Send("envi\r\n")
 
 yakit.Info("Start to waiting result")
 result, err := conn.RecvStringTimeout(3)
+addr := str.HostPort(target, port)
 if str.MatchAllOfSubString(result, "zookeeper.version=") {
     yakit.StatusCard("Zookeeper未授权访问漏洞", str.HostPort(target, port))
+    risk.NewRisk(
+        str.HostPort(target, port), risk.type("unauth-access"), risk.typeVerbose("未授权访问"),
+        risk.title(sprintf("Zookeeper Unauth Access: %v", addr)),
+        risk.titleVerbose(sprintf("Zookeeper 未授权访问: %v", addr)),
+        risk.payload(codec.StrconvQuote(`envi\r\n`)),
+    )
 }

@@ -1,0 +1,33 @@
+{
+    "name": "【端口扫描】Zookeeper未授权访问",
+    "tags": [
+        "unauth"
+    ],
+    "help": "Zookeeper 未授权访问 `envi\\r\\n`",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "2181",
+            "required": false,
+            "group": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "【端口扫描】Zookeeper未授权访问",
+    "general_module_key": "【端口扫描】Zookeeper未授权访问",
+    "is_general_module": true
+}
