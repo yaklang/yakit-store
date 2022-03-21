@@ -2,10 +2,10 @@ yakit.AutoInitYakit()
 
 target = cli.String("target", cli.setDefault("uestc.edu.cn"))
 
-recursive = cli.Bool("recursive", cli.setHelp("设置是否递归爆破？"))
+notRecursive = cli.Bool("not-recursive", cli.setHelp("设置是否递归爆破？"))
 wildcardToStop = cli.Bool("wildcard-to-stop") // 泛解析停止
 
-res, err := subdomain.Scan(target, subdomain.recursive(recursive), subdomain.wildcardToStop(wildcardToStop))
+res, err := subdomain.Scan(target, subdomain.recursive(!notRecursive), subdomain.wildcardToStop(wildcardToStop))
 if err != nil {
     yakit.Error("构建子域名扫描失败：%v", err)
     die(err)
@@ -29,6 +29,12 @@ type palm/common/subdomain.(SubdomainResult) struct {
 
 
 yakit.Info("开始准备处理子域名收集的结果")
+yakit.EnableTable("涉及C段表", ["涉及C段"])
+outputTableCClass = func(network) {
+    data = make(map[string]var)
+    data["涉及C段"] = network
+    yakit.TableData("涉及C段表", data)
+}
 yakit.EnableTable("子域名表", ["Domain", "IP"])
 outputTable = func(domain, ip) {
     data = make(map[string]var)
@@ -36,6 +42,7 @@ outputTable = func(domain, ip) {
     data["IP"] = ip
     yakit.TableData("子域名表", data)
 }
+
 
 count = 0
 savedCount = 0
@@ -55,7 +62,7 @@ statusSavedAddCount = func() {
     yakit.StatusCard("已保存/已收集", str.f("%v/%v", savedCount, count))
 }
 
-swg = sync.NewSizedWaitGroup(10)
+swg = sync.NewSizedWaitGroup(40)
 submitToDB = func(domain, ip) {
     swg.Add()
     go func{
@@ -84,9 +91,10 @@ for result = range res {
     network = network[0]
     if cClassCollector[network] == undefined {
         cClassCollector[network] = 0
+        outputTableCClass(network)
     }
     cClassCollector[network] ++
-    yakit.StatusCard(sprintf("C段:%v 主机数", network), cClassCollector[network])
+    // yakit.StatusCard(sprintf("C段:%v 主机数", network), cClassCollector[network])
     
     submitToDB(result.Domain, result.IP)
 }
