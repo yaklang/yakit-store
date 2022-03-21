@@ -15,5 +15,5 @@ handle = func(origin /*string*/) {
         j := randn(0,i + 1)
         slice[i], slice[j] = slice[j], slice[i]
     }
-    return str.Join(slice, "\n")
+    return str.Join(str.Split(str.Join(str.Split(str.Join(slice,"\n"),"\r\n"), "\n") ,"\n\n"), "\n")
 }
