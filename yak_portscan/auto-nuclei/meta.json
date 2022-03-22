@@ -1,0 +1,33 @@
+{
+    "name": "nuclei自动扫描",
+    "tags": [
+        "漏洞扫描"
+    ],
+    "help": "勾选后会在端口/指纹扫描过程自动对每个IP:Port进行nuclei扫描",
+    "author": "Alex-null",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
