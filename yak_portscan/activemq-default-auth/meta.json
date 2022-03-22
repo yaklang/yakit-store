@@ -1,0 +1,35 @@
+{
+    "name": "ActiveMQ 默认密码检查",
+    "tags": [
+        "unauth",
+        "activemq",
+        "mq"
+    ],
+    "help": "检查 ActiveMQ 指纹，测试 ActiveMQ 是否可以用默认密码登陆，admin:admin",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "218.59.193.141",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "8081",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
