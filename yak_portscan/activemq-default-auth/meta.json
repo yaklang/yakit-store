@@ -14,7 +14,7 @@
             "verbose": "扫描的目标",
             "description": "",
             "type": "string",
-            "default_value": "218.59.193.141",
+            "default_value": "",
             "required": true,
             "group": ""
         },
