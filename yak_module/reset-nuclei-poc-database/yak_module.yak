@@ -1,0 +1,14 @@
+yakit.AutoInitYakit()
+
+loglevel("info");
+yakit.Info("Prepare for Removing Database")
+err = nuclei.RemoveDatabase();
+if err != nil {
+    yakit.Error("Auto Update failed: %s", err)
+}
+
+templatesDir = str.PathJoin(yakit.GetHomeDir(), "..", "nuclei-templates", "README.md")
+yakit.File(templatesDir, "Nuclei PoCs")
+yakit.Info("start to load from ~/nuclei-templates")
+err = nuclei.UpdateDatabase();
+die(err)

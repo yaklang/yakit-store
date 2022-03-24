@@ -1,0 +1,15 @@
+{
+    "name": "重置 nuclei Yaml PoC 数据库",
+    "tags": [
+        "辅助",
+        "更新工具"
+    ],
+    "help": "手动更新 Yaml PoC 的便捷插件",
+    "author": "v1ll4n",
+    "module_file": "yak_module.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "重置 nuclei Yaml PoC 数据库",
+    "general_module_key": "重置 nuclei Yaml PoC 数据库",
+    "is_general_module": false
+}
