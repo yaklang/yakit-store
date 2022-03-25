@@ -1,0 +1,24 @@
+{
+    "name": "主动指纹探测",
+    "tags": [
+        "信息收集"
+    ],
+    "help": "主动指纹探测，可在插件批量执行中执行，数据库--漏洞与风险中查看识别到的指纹。",
+    "author": "Alex-null",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "目标",
+            "description": "Url形式，如https://128.118.137.6",
+            "type": "string",
+            "default_value": "https://128.118.137.6",
+            "required": true,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
