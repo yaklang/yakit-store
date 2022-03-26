@@ -1,0 +1,33 @@
+{
+    "name": "【端口扫描】主动信息探测",
+    "tags": [
+        "信息收集"
+    ],
+    "help": "【端口扫描】主动信息探测，在扫描端口/指纹中勾选插件，将会对开放端口发起主动信息探测，可在数据库--漏洞与风险中查看命中的信息",
+    "author": "Alex-null",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": ""
+        },
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
