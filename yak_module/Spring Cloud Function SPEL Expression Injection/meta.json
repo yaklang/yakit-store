@@ -1,0 +1,35 @@
+{
+    "name": "Spring Cloud Function SPEL表达式注入漏洞检测",
+    "tags": [
+        "Spring Cloud Function"
+    ],
+    "help": "检测单个主机是否存在Spring Cloud Function SPEL表达式注入漏洞",
+    "author": "胖虎",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "目的ip",
+            "description": "检测主机ip地址",
+            "type": "string",
+            "default_value": "127.0.0.1",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "port",
+            "verbose": "目的端口",
+            "description": "目的端口",
+            "type": "uint",
+            "default_value": "80",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
