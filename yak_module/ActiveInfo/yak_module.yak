@@ -3284,7 +3284,7 @@ if err != nil {
     return
 }
 
-urls = str.ParseStringToUrlsWith3W(str.HostPort(host, port))
+urls = str.ParseStringToUrls(str.HostPort(host, port))
 for _, url := range urls {
     faviconUrl = str.f("%v%v", str.ParseStringUrlToWebsiteRootPath(url), "favicon.ico")
     hash, err = http.RequestFaviconHash(faviconUrl)
