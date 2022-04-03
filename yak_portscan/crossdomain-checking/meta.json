@@ -1,0 +1,35 @@
+{
+    "name": "/crossdomain.xml allow-access-from 检查",
+    "tags": [
+        "crossdomain"
+    ],
+    "help": "检查 crossdomain 配置信息",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "/crossdomain.xml allow-access-from 检查",
+    "general_module_key": "/crossdomain.xml allow-access-from 检查",
+    "is_general_module": true
+}

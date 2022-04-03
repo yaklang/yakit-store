@@ -1,0 +1,115 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+/*
+本插件定义的函数主要用于端口扫描的额外扩展
+
+函数定义如下：
+func(result *fp.MatchResult)
+
+// 详细结构体定义与内容见模版结尾
+// 这里最关键的是，如果对扫描出的结果有疑问，需要对 MatchResult 进行修改，应该直接
+// 对变量.Field 进行修改。
+
+DEMO:
+
+handle = func(result) {
+    if result.Fingerprint != nil {
+        if result.Port == 80 && result.GetServiceName() == "" {
+            result.Fingerprint.ServiceName = "http"
+        }
+    }
+}
+
+*/
+
+/*
+type palm/common/mutate.(_httpResult) struct {
+  Fields(可用字段): 
+      Url: string  
+      Request: *http.Request  
+      Error: error  
+      RequestRaw: []uint8  
+      ResponseRaw: []uint8  
+      Response: *http.Response  
+      DurationMs: int64  
+      Timestamp: int64  
+      Payloads: []string  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+}
+*/
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !(result.IsOpen() && len(result.Fingerprint.HttpFlows) > 0) {
+        return
+    }
+
+    addr = str.HostPort(result.Target, result.Port)
+    freq, err = fuzz.UrlsToHTTPRequests(str.ParseStringToUrlsWith3W(addr)...)
+    if err != nil {
+        return
+    }
+
+    rsp, err := freq.FuzzPath("/crossdomain.xml").Exec()
+    for res = range rsp {
+        _, body = str.SplitHTTPHeadersAndBodyFromPacket(res.ResponseRaw)
+        if str.MatchAllOfSubString(body, `<allow-access-from domain="*"`) {
+            risk.NewRisk(
+                res.Url, risk.type("config-error"), 
+                risk.typeVerbose("配置错误"), 
+                risk.title(sprintf("/crossdomain.xml Config Error: allow-access-from *: %v", addr)),
+                risk.titleVerbose(sprintf("/crossdomain.xml 配置错误: allow-access-from *: %v", addr)),
+                risk.severity("middle"), risk.details({
+                    "url": res.Url, "request": string(res.RequestRaw), "response": string(res.ResponseRaw),
+                }),
+            )
+            yakit.Info("%v: /crossdomain.xml allow all", addr)
+        }
+    }
+}
+
+/*
+// 具体定义如下：
+type palm/common/fp.(MatchResult) struct {
+      Target: string  
+      Port: int  
+      State: fp.PortState  
+      Reason: string  
+      Fingerprint: *fp.FingerprintInfo  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func GetBanner() return(string) 
+      func GetCPEs() return([]string) 
+      func GetDomains() return([]string) 
+      func GetHtmlTitle() return(string) 
+      func GetProto() return(fp.TransportProto) 
+      func GetServiceName() return(string) 
+      func IsOpen() return(bool) 
+      func String() return(string) 
+}
+
+
+type palm/common/fp.(FingerprintInfo) struct {
+      IP: string  
+      Port: int  
+      Proto: fp.TransportProto  
+      ServiceName: string  
+      ProductVerbose: string  
+      Info: string  
+      Version: string  
+      Hostname: string  
+      OperationVerbose: string  
+      DeviceType: string  
+      CPEs: []string  
+      Raw: string  
+      Banner: string  
+      CPEFromUrls: map[string][]*webfingerprint.CPE  
+      HttpFlows: []*fp.HTTPFlow  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func FromRegexp2Match(v1: *regexp2.Match) 
+}
+*/
+
