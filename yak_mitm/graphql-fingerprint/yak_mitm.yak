@@ -1,0 +1,219 @@
+#-----------------------MITM Hooks I/O-------------------------
+/*
+#如何使用插件参数？
+
+## 例如，如果你设置了一个参数为 url_keyword 的参数，可以通过 MITM_PARAMS 来使用它！
+urlKeyword = MITM_PARAMS["url_keyword"]
+
+# 如何输出给 Yakit 给用户查看？
+
+yakit_output(i: any) // 可以只输出到 "Console 界面"
+yakit_save(i: any)   // 可以输出并保存到数据库中，在 "插件输出" 中查看
+*/
+#----------------MITM Hooks Test And Quick Debug-----------------
+/*
+# __test__ 是 yakit mitm 插件用于调试的函数 【注意：这个函数在 MITM hooks劫持环境下不会被导入】
+
+在这个函数中，你可以使用 yakit.GenerateYakitMITMHooksParams(method: string, url: string, opts ...http.Option) 来方便的生成可供 hooks 调用的参数，参考代码模版中的用法～
+
+*/
+
+
+#--------------------------WORKSPACE-----------------------------
+__test__ = func() {
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "https://graphiql.stateofjs.com/")
+    if err != nil {
+        return
+    }
+    isHttps, url, reqRaw, rspRaw, body = results
+
+    mirrorNewWebsite(results...)
+}
+
+possibleGraphPath = [
+    // "/",
+    "/graphql", "/graphiql",
+    "/api/graphql", "/api/graphiql",
+    "/v{{int(1-3)}}/graphql", 
+    "/v{{int(1-3)}}/graphiql", 
+    "/gql", "/index.php?graphql",
+    "/console", "/playground",
+]
+
+/*
+type palm/common/mutate.(FuzzHTTPRequest) struct {
+  Fields(可用字段):
+      Opts: []mutate.BuildFuzzHTTPRequestOption
+  StructMethods(结构方法/函数):
+  PtrStructMethods(指针结构方法/函数):
+      func Exec(v1 ...func httpPoolConfigOption(v1: *mutate.httpPoolConfig) ) return(chan *mutate._httpResult, error)
+      func ExecFirst(v1 ...func httpPoolConfigOption(v1: *mutate.httpPoolConfig) ) return(*mutate._httpResult, error)
+      func FuzzCookie(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzCookieRaw(v1: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzFormEncoded(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzGetParams(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzGetParamsRaw(v1 ...string) return(mutate.FuzzHTTPRequestIf)
+      func FuzzHTTPHeader(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzMethod(v1 ...string) return(mutate.FuzzHTTPRequestIf)
+      func FuzzPath(v1 ...string) return(mutate.FuzzHTTPRequestIf)
+      func FuzzPostJsonParams(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzPostParams(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzPostRaw(v1 ...string) return(mutate.FuzzHTTPRequestIf)
+      func FuzzUploadFile(v1: interface {}, v2: interface {}, v3: []uint8) return(mutate.FuzzHTTPRequestIf)
+      func FuzzUploadFileName(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func FuzzUploadKVPair(v1: interface {}, v2: interface {}) return(mutate.FuzzHTTPRequestIf)
+      func GetCommonParams() return([]*mutate.FuzzHTTPRequestParam)
+      func GetCookieParams() return([]*mutate.FuzzHTTPRequestParam)
+      func GetGetQueryParams() return([]*mutate.FuzzHTTPRequestParam)
+      func GetOriginHTTPRequest() return(*http.Request, error)
+      func GetPostJsonParams() return([]*mutate.FuzzHTTPRequestParam)
+      func GetPostParams() return([]*mutate.FuzzHTTPRequestParam)
+      func IsBodyFormEncoded() return(bool)
+      func IsBodyJsonEncoded() return(bool)
+      func IsBodyUrlEncoded() return(bool)
+      func IsEmptyBody() return(bool)
+      func ParamsHash() return(string, error)
+      func Repeat(v1: int) return(mutate.FuzzHTTPRequestIf)
+      func Results() return([]*http.Request, error)
+      func Show()
+}
+*/
+
+fingerprintPayload = `query {
+    __typename
+}`
+
+/*
+Content-Type: application/rdf+xml
+Connection: close
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Headers: Origin,X-Requested-With,Content-Type,Accept,authorization,x-auth-token
+Access-Control-Allow-Credentials: true
+Server: Jetty(9.4.z-SNAPSHOT)
+Content-Length: 17443
+
+<rdf:RDF
+*/
+
+getTypeName = func(data) {
+    defer func{
+        recover()
+    }
+    data = json.loads(data)
+    return data["data"]["__typename"]
+}
+
+getErrors = func(data) {
+    defer func{
+        recover()
+    }
+    data = json.loads(data)
+    return data["errors"]
+}
+
+getErrors = func(data) {
+    defer func{
+        recover()
+    }
+    data = json.loads(data)
+    return data["errors"]
+}
+
+getData = func(data) {
+    defer func{
+        recover()
+    }
+    data = json.loads(data)
+    return data["data"]
+}
+
+# mirrorNewWebsite 每新出现一个网站，这个网站的第一个请求，将会在这里被调用！
+mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    req, err = fuzz.HTTPRequest(req, fuzz.https(isHttps))
+    if err != nil {
+        err = sprintf("GraphQL ERROR: %v", err)
+        yakit_output(err)
+        die(err)
+    }
+
+    res, err = req.FuzzMethod("GET").FuzzPath(possibleGraphPath...).FuzzGetParamsRaw("").Exec(httpool.size(3), httpool.https(isHttps))
+    if err != nil {
+        die(err)
+    }
+
+    yakit_output("Start to checking graphql for "+url)
+    all404 = true
+
+    for result = range res {
+        if result.Response.StatusCode == 404 {
+            continue
+        }
+        all404 = false
+
+        println(result.Url)
+
+        // rdf
+        if str.MatchAllOfRegexp(result.ResponseRaw, `(?i)Content-Type:\s+application/rdf\+xml`, `<\s*rdf:RDF`, `<\s*rdf:Description`) {
+            yakit_output("Found GraphQL RDF File" + result.Url)
+            risk.NewRisk(
+                result.Url, 
+                risk.title(sprintf("Information Leak: GraphQL API XML-RDF Description: %v", result.Url)),
+                risk.titleVerbose(sprintf("信息泄漏：GraphQL XML:RDF 接口描述泄漏: %v", result.Url)),
+                risk.severity("middle"), risk.type("graphql-info-leak"), risk.typeVerbose("GraphQL 信息泄漏"),
+                risk.details({"url": result.Url, "request": result.RequestRaw, "response": result.ResponseRaw}),
+            )
+            continue
+        }
+
+        if str.MatchAnyOfRegexp(body, `id\s*=\s*['"]?graphi?ql(-render)?`, `(?i)Welcome\s+to\s+the\s+GraphQL\s+API\s+explorer\s+!\s+Your\s+API\s+requests\s+are\s+`) {
+            yakit_output("Found GraphQL Debug Page" + result.Url)
+            risk.NewRisk(
+                result.Url, 
+                risk.title(sprintf("Information Leak: GraphQL API Debug Page: %v", result.Url)),
+                risk.titleVerbose(sprintf("信息泄漏：GraphQL API 调试页面: %v", result.Url)),
+                risk.severity("middle"), risk.type("graphql-info-leak"), risk.typeVerbose("GraphQL 信息泄漏"),
+                risk.details({"url": result.Url, "request": result.RequestRaw, "response": result.ResponseRaw}),
+            )
+            continue
+        }
+    }
+
+    if all404 {
+        yakit_output("CANNOT FOUND Available GraphQL for " + url)
+        return
+    }
+
+    res, err = req.FuzzMethod("POST").FuzzPath(possibleGraphPath...).FuzzGetParamsRaw("").FuzzPostRaw(fingerprintPayload).Exec(httpool.size(3), httpool.https(isHttps))
+    if err != nil {
+        err = sprintf("GraphQL Fuzz PATH ERROR: %v", err)
+        yakit_output(err)
+        die(err)
+    }
+
+    for result = range res {
+        if result.Response.StatusCode == 404 {
+            continue
+        }
+
+        header, body = str.SplitHTTPHeadersAndBodyFromPacket(result.ResponseRaw)
+        if len(body) <= 0{
+            continue
+        }
+        println(string(body))
+
+        isJson = str.MatchAllOfRegexp(header, `(?i)Content-Type:\s+application/json`)
+        if isJson && ( str.MatchAnyOfRegexp(sprint(getTypeName(body)), "Query", "QueryRoot", "query_root") || 
+            sprint(type(getErrors(body)).Kind().String()) == "slice" || 
+            sprint(type(getData(body)).Kind().String()) == "map" ){
+            yakit_output("GraphQL TYPENAME Checking Passed: " + result.Url)
+            risk.NewRisk(
+                result.Url, 
+                risk.title(sprintf("Information Leak: GraphQL API: %v", result.Url)),
+                risk.titleVerbose(sprintf("信息泄漏：GraphQL API: %v", result.Url)),
+                risk.severity("middle"), risk.type("graphql-info-leak"), risk.typeVerbose("GraphQL 信息泄漏"),
+                risk.details({"url": result.Url, "request": result.RequestRaw, "response": result.ResponseRaw}),
+            )
+            continue
+        }
+    }
+}

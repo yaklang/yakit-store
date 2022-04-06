@@ -1,0 +1,15 @@
+{
+    "name": "GraphQL API Fingerprint Checking",
+    "tags": [
+        "api",
+        "graphql"
+    ],
+    "help": "Checking Application ‘s GraphQL Config",
+    "author": "v1ll4n",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "GraphQL API Fingerprint Checking",
+    "general_module_key": "GraphQL API Fingerprint Checking",
+    "is_general_module": true
+}
