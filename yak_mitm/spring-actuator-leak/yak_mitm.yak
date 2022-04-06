@@ -1,0 +1,72 @@
+# mitm plugin template
+
+
+#-----------------------MITM Hooks I/O-------------------------
+/*
+#如何使用插件参数？
+
+## 例如，如果你设置了一个参数为 url_keyword 的参数，可以通过 MITM_PARAMS 来使用它！
+urlKeyword = MITM_PARAMS["url_keyword"]
+
+# 如何输出给 Yakit 给用户查看？
+
+yakit_output(i: any) // 可以只输出到 "Console 界面"
+yakit_save(i: any)   // 可以输出并保存到数据库中，在 "插件输出" 中查看
+*/
+#----------------MITM Hooks Test And Quick Debug-----------------
+/*
+# __test__ 是 yakit mitm 插件用于调试的函数 【注意：这个函数在 MITM hooks劫持环境下不会被导入】
+
+在这个函数中，你可以使用 yakit.GenerateYakitMITMHooksParams(method: string, url: string, opts ...http.Option) 来方便的生成可供 hooks 调用的参数，参考代码模版中的用法～
+
+*/
+
+
+#--------------------------WORKSPACE-----------------------------
+__test__ = func() {
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://localhost:8086")
+    if err != nil {
+        return
+    }
+    isHttps, url, reqRaw, rspRaw, body = results
+
+    mirrorNewWebsite(results...)
+}
+
+count = 0
+lock = sync.NewLock()
+
+# mirrorNewWebsite 每新出现一个网站，这个网站的第一个请求，将会在这里被调用！
+mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    freq, err = fuzz.HTTPRequest(req)
+    die(err)
+
+    host, port, _ = str.ParseStringToHostPort(url)
+    addr = str.HostPort(host, port)
+
+    result, err = freq.FuzzPath("/actuator/").ExecFirst(httpool.https(isHttps))
+    die(err)
+
+    if result.Response.StatusCode == 404 {
+        return
+    }
+
+    if str.MatchAnyOfSubString(result.ResponseRaw, 
+        "/actuator/env", "/actuator/loggers",
+        "/actuator/health", "/actuator/info",
+        "/actuator/health/{",
+    ) {
+        lock.Lock()
+        count++
+        yakit_output("spring /actuator/ page leak" + result.Url)
+        yakit_status(sprintf("Spring Actuator[%v]", count), addr)
+        lock.Unlock()
+        risk.NewRisk(result.Url, 
+            risk.severity("high"), 
+            risk.title("Spring /actuator/ leak: " + result.Url),
+            risk.titleVerbose("Spring /actuator/ 页面泄漏: " + result.Url),
+            risk.type("info-leak"), risk.typeVerbose("敏感信息泄漏"),
+            risk.details({"url": result.Url, "request": result.RequestRaw, "response": result.ResponseRaw}),
+        )
+    }
+}

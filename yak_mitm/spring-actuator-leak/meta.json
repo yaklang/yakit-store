@@ -1,0 +1,16 @@
+{
+    "name": "Spring Actuator 敏感信息泄漏",
+    "tags": [
+        "spring",
+        "java",
+        "actuator"
+    ],
+    "help": "敏感信息泄漏",
+    "author": "v1ll4n",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "Spring Actuator 敏感信息泄漏",
+    "general_module_key": "Spring Actuator 敏感信息泄漏",
+    "is_general_module": true
+}
