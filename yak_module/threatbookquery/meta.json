@@ -1,0 +1,35 @@
+{
+    "name": "微步在线情报查询",
+    "tags": [
+        "威胁情报"
+    ],
+    "help": "使用微步在线API对IP进行查询",
+    "author": "Alex-null",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "目标IP",
+            "description": "请输入输入IP",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "threatbookapi",
+            "verbose": "微步API",
+            "description": "微步在线API，免费额度50个/日\n可在https://x.threatbook.cn/v5/myApi查看",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

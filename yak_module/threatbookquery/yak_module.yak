@@ -1,0 +1,60 @@
+log.setLevel("info")  // 设置日志级别
+yakit.AutoInitYakit()
+yakit.Info("使用微步在线API，免费额度50个/日")
+target = str.LowerAndTrimSpace(cli.String("target"))
+if target == "" {
+    die("no target")
+}
+threatbookapi = str.LowerAndTrimSpace(cli.String("threatbookapi"))
+yakit.Info("查询IP:%v",target)
+yakit.Info("输入的微步API:%v",threatbookapi)
+
+if threatbookapi != "" {
+  yakit.Info("设置新的API%v",threatbookapi)
+  db.SetKey("threatbookapi",threatbookapi)
+  apikey = db.GetKey("threatbookapi")
+}else{
+  apikey = db.GetKey("threatbookapi")
+  yakit.Info("没有获取到API，正在尝试读取历史API")
+  if apikey != ""{
+    yakit.Info("读取历史API成功%v",apikey)
+    
+  }else{
+    yakit.Error("获取历史API失败")
+  }
+}
+
+yakit.Info("正在使用微步API:%v",apikey)
+url = "https://api.threatbook.cn/v3/scene/ip_reputation?apikey="+apikey+"&resource="+target+"&lang=zh"
+rsp, err = http.Get(url,http.ua(http.uarand()))
+if err != nil {
+  yakit.Error("微步API请求失败，错误原因:%v",err)
+}
+die(err)
+
+
+rspRaw, err = http.dump(rsp)
+headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rspRaw)
+die(err)
+println(string(body))
+t = json.loads(body)
+
+if parseString(t["response_code"]) == "0" {
+  yakit.Info("微步API请求成功")
+  yakit.EnableTable("微步在线情报查询插件", ["IP","是否恶意","国家","可信度","威胁类型","运营商","更新时间"])
+
+  outputData = def(key,key2,key3,key4,key5,key6,key7){
+      data = make(map[string]var)
+      data["IP"] = key
+      data["是否恶意"] = key2
+      data["国家"] = key3
+      data["可信度"] = key4
+      data["威胁类型"] = key5
+      data["运营商"] = key6
+      data["更新时间"] = key7
+      yakit.Output(yakit.TableData("微步在线情报查询插件", data))
+  }
+  outputData(target, parseString(t["data"][target]["is_malicious"]),t["data"][target]["basic"]["location"]["country"],t["data"][target]["confidence_level"],t["data"][target]["judgments"],t["data"][target]["basic"]["carrier"],t["data"][target]["update_time"])
+}else{
+  yakit.Error("微步API请求失败，错误原因:%v",parseString(t["verbose_msg"]))
+}
