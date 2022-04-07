@@ -1,10 +1,10 @@
 {
-    "name": "【端口扫描】主动信息探测",
+    "name": "HTTP Web 目录爆破：敏感中间件",
     "tags": [
-        "信息收集"
+        "brute-dir"
     ],
-    "help": "【端口扫描】主动信息探测，在扫描端口/指纹中勾选插件，将会对开放端口发起主动信息探测，可在数据库--漏洞与风险中查看命中的信息",
-    "author": "Alex-null",
+    "help": "爆破常见目录与进行基础安全检查",
+    "author": "v1ll4n",
     "module_file": "handle.yak",
     "params": [
         {
@@ -29,7 +29,7 @@
         }
     ],
     "document": "document.md",
-    "general_module_verbose": "【端口扫描】主动信息探测",
-    "general_module_key": "【端口扫描】主动信息探测",
+    "general_module_verbose": "HTTP Web 目录爆破：敏感中间件",
+    "general_module_key": "HTTP Web 目录爆破：敏感中间件",
     "is_general_module": true
 }

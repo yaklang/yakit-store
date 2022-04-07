@@ -3334,7 +3334,7 @@ handle = func(result /* *fp.MatchResult */) {
                     risk.NewRisk(
                         target, risk.type("info"), risk.typeVerbose("主动指纹探测插件【端口扫描】"),
                         risk.title(sprintf("%v", r["cms"])),
-                        risk.payload(sprintf("%v", r)),
+                        risk.payload(sprintf("%v", r)), risk.severity("info"),
                     )
                 }
             }
@@ -3367,7 +3367,7 @@ handle = func(result /* *fp.MatchResult */) {
                 risk.NewRisk(
                     target, risk.type("info"), risk.typeVerbose("主动指纹探测插件【端口扫描】"),
                     risk.title(sprintf("%v", r["cms"])),
-                    risk.payload(sprintf("%v", r)),
+                    risk.payload(sprintf("%v", r)), risk.severity("info"),
                 )
             }
         }
