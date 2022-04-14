@@ -1,0 +1,14 @@
+{
+    "name": "敏感文件信息获取",
+    "tags": [
+        ""
+    ],
+    "help": "通过正则获取到通过的流量中的敏感信息(api/access key 内网地址)",
+    "author": "sucre",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
