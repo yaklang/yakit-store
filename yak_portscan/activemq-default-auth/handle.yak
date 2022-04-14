@@ -30,6 +30,10 @@ handle = func(result /* *fp.MatchResult */) {
         return
     }
 
+    if len(result.Fingerprint.HttpFlows) <= 0 {
+        return
+    }
+
     target = str.HostPort(result.Target, result.Port)
 
     rsp, _, err = poc.HTTP(`GET /admin/ HTTP/1.1
@@ -41,7 +45,7 @@ User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (
     // yakit.Text(rsp)
     if !str.MatchAllOfSubString(rsp, "WWW-Authenticate:") {
         yakit.Error("WWW-Authenticate Identify failed")
-        die("match www-authenticate failed")
+        return
     }
 
     // 指纹识别
@@ -69,7 +73,7 @@ Authorization: Basic {{base64(admin:admin)}}
         risk.NewRisk(
             target, risk.title("ActiveMQ Default Authorization: " + target), risk.titleVerbose(str.f("ActiveMQ 默认密码登陆：%v", target)),
             risk.type("unauth"), risk.typeVerbose("未授权访问"), risk.payload("Authorization: Basic {{base64(admin:admin)}}"),
-            risk.parameter("basic-auth"),
+            risk.parameter("basic-auth"), risk.severity("critical"),
         )
     } else{
         yakit.Info("无 Active 默认密码风险：%v", target)

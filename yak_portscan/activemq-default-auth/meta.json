@@ -16,7 +16,8 @@
             "type": "string",
             "default_value": "",
             "required": true,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "ports",
@@ -25,11 +26,12 @@
             "type": "string",
             "default_value": "8081",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         }
     ],
     "document": "document.md",
-    "general_module_verbose": "",
-    "general_module_key": "",
+    "general_module_verbose": "ActiveMQ 默认密码检查",
+    "general_module_key": "ActiveMQ 默认密码检查",
     "is_general_module": true
 }
