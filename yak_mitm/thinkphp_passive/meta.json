@@ -1,14 +1,15 @@
 {
     "name": "ThinkPHP RCE 被动扫描",
     "tags": [
-        "thinkphp"
+        "thinkphp",
+        "rce"
     ],
     "help": "ThinkPHP RCE 被动扫描",
-    "author": "z3r0ne",
+    "author": "z3r0ne,v1ll4n",
     "module_file": "yak_mitm.yak",
     "params": null,
     "document": "document.md",
-    "general_module_verbose": "",
-    "general_module_key": "",
-    "is_general_module": false
+    "general_module_verbose": "ThinkPHP RCE 被动扫描",
+    "general_module_key": "ThinkPHP RCE 被动扫描",
+    "is_general_module": true
 }
