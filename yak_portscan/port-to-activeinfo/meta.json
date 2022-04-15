@@ -4,7 +4,7 @@
         "信息收集"
     ],
     "help": "【端口扫描】主动信息探测，在扫描端口/指纹中勾选插件，将会对开放端口发起主动信息探测，可在数据库--漏洞与风险中查看命中的信息",
-    "author": "Alex-null",
+    "author": "Alex-null,v1ll4n",
     "module_file": "handle.yak",
     "params": [
         {

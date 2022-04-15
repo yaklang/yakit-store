@@ -3332,9 +3332,10 @@ handle = func(result /* *fp.MatchResult */) {
                 if str.StringSliceContains(keywords, hash) {
                     yakit.Info("%v %v",target,r["cms"])
                     risk.NewRisk(
-                        target, risk.type("info"), risk.typeVerbose("主动指纹探测插件【端口扫描】"),
-                        risk.title(sprintf("%v", r["cms"])),
-                        risk.payload(sprintf("%v", r)), risk.severity("info"),
+                        target, risk.type("info"), risk.typeVerbose("主动指纹扫描"),
+                        risk.title(sprintf("%v: %v", r["cms"], target)), 
+                        risk.severity("info"),
+                        risk.payload(sprintf("%v", r)),
                     )
                 }
             }
@@ -3365,61 +3366,13 @@ handle = func(result /* *fp.MatchResult */) {
             if found {
                 yakit.Info("%v %v",target,r["cms"])
                 risk.NewRisk(
-                    target, risk.type("info"), risk.typeVerbose("主动指纹探测插件【端口扫描】"),
-                    risk.title(sprintf("%v", r["cms"])),
+                    target, risk.type("info"), risk.typeVerbose("主动指纹扫描"),
+                    risk.title(sprintf("%v: %v", r["cms"], target)), 
                     risk.payload(sprintf("%v", r)), risk.severity("info"),
                 )
             }
         }
-        
         yakit.Info("插件执行完成")
         log.Info("插件执行完成")
-
-
-
     }
 }
-
-/*
-// 具体定义如下：
-type palm/common/fp.(MatchResult) struct {
-      Target: string  
-      Port: int  
-      State: fp.PortState  
-      Reason: string  
-      Fingerprint: *fp.FingerprintInfo  
-  StructMethods(结构方法/函数): 
-  PtrStructMethods(指针结构方法/函数): 
-      func GetBanner() return(string) 
-      func GetCPEs() return([]string) 
-      func GetDomains() return([]string) 
-      func GetHtmlTitle() return(string) 
-      func GetProto() return(fp.TransportProto) 
-      func GetServiceName() return(string) 
-      func IsOpen() return(bool) 
-      func String() return(string) 
-}
-
-
-type palm/common/fp.(FingerprintInfo) struct {
-      IP: string  
-      Port: int  
-      Proto: fp.TransportProto  
-      ServiceName: string  
-      ProductVerbose: string  
-      Info: string  
-      Version: string  
-      Hostname: string  
-      OperationVerbose: string  
-      DeviceType: string  
-      CPEs: []string  
-      Raw: string  
-      Banner: string  
-      CPEFromUrls: map[string][]*webfingerprint.CPE  
-      HttpFlows: []*fp.HTTPFlow  
-  StructMethods(结构方法/函数): 
-  PtrStructMethods(指针结构方法/函数): 
-      func FromRegexp2Match(v1: *regexp2.Match) 
-}
-*/
-
