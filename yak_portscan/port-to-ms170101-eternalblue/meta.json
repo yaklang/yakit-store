@@ -1,0 +1,41 @@
+{
+    "name": "MS17-010 永恒之蓝漏洞检测（端口扫描版）",
+    "tags": [
+        "rce",
+        "ms17-010",
+        "eternalblue",
+        "永恒之蓝",
+        "samba",
+        "smb",
+        "windows"
+    ],
+    "help": "调用原生插件的 MS17010 检测",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "445",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "10.129.128.151",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "MS17-010 永恒之蓝漏洞检测（端口扫描版）",
+    "general_module_key": "MS17-010 永恒之蓝漏洞检测（端口扫描版）",
+    "is_general_module": true
+}

@@ -1,0 +1,39 @@
+{
+    "name": "MS17-010 永恒之蓝漏洞检测",
+    "tags": [
+        "rce",
+        "smb",
+        "永恒之蓝",
+        "eternalblue",
+        "windows"
+    ],
+    "help": "MS17010",
+    "author": "v1ll4n",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "目标主机",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "port",
+            "verbose": "端口",
+            "description": "",
+            "type": "uint",
+            "default_value": "445",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}

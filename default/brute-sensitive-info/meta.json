@@ -1,0 +1,35 @@
+{
+    "name": "HTTP Web 目录爆破：敏感中间件",
+    "tags": [
+        "brute-dir"
+    ],
+    "help": "爆破常见目录与进行基础安全检查",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "HTTP Web 目录爆破：敏感中间件",
+    "general_module_key": "HTTP Web 目录爆破：敏感中间件",
+    "is_general_module": true
+}
