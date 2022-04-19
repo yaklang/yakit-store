@@ -1,0 +1,37 @@
+{
+    "name": "Tomcat Path 403 Bypass",
+    "tags": [
+        "tomcat",
+        "403 bypass",
+        "info"
+    ],
+    "help": "通过 /..;/ 绕过 403 访问 /manager/html",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "10.129.96.153",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "Tomcat Path 403 Bypass",
+    "general_module_key": "Tomcat Path 403 Bypass",
+    "is_general_module": true
+}
