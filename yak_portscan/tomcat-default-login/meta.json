@@ -1,0 +1,38 @@
+{
+    "name": "Tomcat 登陆爆破",
+    "tags": [
+        "tomat",
+        "brute",
+        "default",
+        "login"
+    ],
+    "help": "简单爆破一些常见的 Tomcat 用户名密码组合",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "8080",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "10.129.120.112",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "Tomcat 登陆爆破",
+    "general_module_key": "Tomcat 登陆爆破",
+    "is_general_module": true
+}
