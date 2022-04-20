@@ -1,0 +1,49 @@
+yakit.AutoInitYakit()
+
+// target = `106.87.156.73","106.87.166.33","106.87.172.90","106.87.173.82",`
+target = cli.String("target")
+target = str.ReplaceAll(target , "\\n",",")
+if target == "" {
+    yakit.Error("Empty Target")
+    return
+}
+targets = re.ExtractIP(target)
+
+yakit.EnableTable("涉及C段表", ["涉及C段"])
+outputTableCClass = func(network) {
+    data = make(map[string]var)
+    data["涉及C段"] = network
+    yakit.TableData("涉及C段表", data)
+}
+
+yakit.EnableTable("IP地址归属", ["ip","country", "regionName","city","isp"])
+outputTable = func(ip,country,regionName,city,isp) {
+    data = make(map[string]var)
+    data["ip"] = ip
+    data["country"] = country
+    data["regionName"] = regionName
+    data["city"] = city
+    data["isp"] = isp
+    yakit.TableData("IP地址归属", data)
+}
+
+cClassCollector = make(map[string]int)
+yakit.Info("开始获取IP地址信息")
+for _,element = range targets{
+    // println(element)
+    url = "http://ip-api.com/json/" + element + "?lang=zh-CN"
+    rsp,err = http.Get(url)
+    raw, err := io.ReadAll(rsp.Body)
+    die(err)
+    raw = json.loads(raw)
+    outputTable(raw["query"],raw["country"], raw["regionName"],raw["city"],raw["isp"])
+    network = str.IPv4ToCClassNetwork(raw["query"])
+    network = network[0]
+    if cClassCollector[network] == undefined {
+            cClassCollector[network] = 0
+            outputTableCClass(network)
+        }
+    cClassCollector[network] ++
+    // println(raw["country"],raw["regionName"],raw["city"],raw["isp"]) 
+}
+yakit.Info("完成✅")
