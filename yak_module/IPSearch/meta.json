@@ -1,0 +1,26 @@
+{
+    "name": "IP批量查询",
+    "tags": [
+        "IP查询",
+        "IP location"
+    ],
+    "help": "批量查询IP地址归属地",
+    "author": "TBOsec",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "IP地址",
+            "description": "",
+            "type": "text",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
