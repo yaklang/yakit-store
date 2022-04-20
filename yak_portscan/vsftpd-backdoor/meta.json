@@ -1,0 +1,38 @@
+{
+    "name": "vsFtpd 后门检查",
+    "tags": [
+        "backdoor",
+        "portscan",
+        "rce",
+        "ftp"
+    ],
+    "help": "vsftpd 后门检查",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "21",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "vsFtpd 后门检查",
+    "general_module_key": "vsFtpd 后门检查",
+    "is_general_module": true
+}

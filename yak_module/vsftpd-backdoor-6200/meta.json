@@ -1,0 +1,38 @@
+{
+    "name": "vsFtpd 6200 Backdoor",
+    "tags": [
+        "rce",
+        "backdoor",
+        "ftp",
+        "vsftpd"
+    ],
+    "help": "检查 vsftpd 6200 后门",
+    "author": "v1ll4n",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "目标主机",
+            "description": "",
+            "type": "string",
+            "default_value": "10.129.128.178",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "port",
+            "verbose": "端口",
+            "description": "",
+            "type": "uint",
+            "default_value": "21",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
