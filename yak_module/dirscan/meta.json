@@ -14,7 +14,8 @@
             "type": "uint",
             "default_value": "50",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "timeout",
@@ -23,7 +24,8 @@
             "type": "uint",
             "default_value": "5",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "proxy",
@@ -32,7 +34,8 @@
             "type": "string",
             "default_value": "",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "target",
@@ -41,16 +44,8 @@
             "type": "string",
             "default_value": "",
             "required": true,
-            "group": ""
-        },
-        {
-            "name": "targets",
-            "verbose": "扫描文件",
-            "description": "设置需要扫描的目标文件",
-            "type": "string",
-            "default_value": "",
-            "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "https",
@@ -59,7 +54,8 @@
             "type": "boolean",
             "default_value": "",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "head",
@@ -68,7 +64,8 @@
             "type": "boolean",
             "default_value": "",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "redirectTimes",
@@ -77,16 +74,8 @@
             "type": "uint",
             "default_value": "",
             "required": false,
-            "group": ""
-        },
-        {
-            "name": "ef",
-            "verbose": "设置不扫描的路径",
-            "description": "设置不扫描的字典",
-            "type": "string",
-            "default_value": "",
-            "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "debug",
@@ -95,7 +84,8 @@
             "type": "boolean",
             "default_value": "",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "file",
@@ -103,8 +93,9 @@
             "description": "设置扫描的目录字典 可以参考  https://github.com/insightglacier/Dictionary-Of-Pentesting",
             "type": "string",
             "default_value": "",
-            "required": true,
-            "group": ""
+            "required": false,
+            "group": "",
+            "extra_setting": ""
         }
     ],
     "document": "document.md",
