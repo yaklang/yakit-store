@@ -1,9 +1,12 @@
 {
-    "name": "HTTP Web 目录爆破：敏感中间件",
+    "name": "vsFtpd 后门检查",
     "tags": [
-        "brute-dir"
+        "backdoor",
+        "portscan",
+        "rce",
+        "ftp"
     ],
-    "help": "爆破常见目录与进行基础安全检查",
+    "help": "vsftpd 后门检查",
     "author": "v1ll4n",
     "module_file": "handle.yak",
     "params": [
@@ -22,14 +25,14 @@
             "verbose": "端口",
             "description": "",
             "type": "string",
-            "default_value": "80",
+            "default_value": "21",
             "required": false,
             "group": "",
             "extra_setting": ""
         }
     ],
     "document": "document.md",
-    "general_module_verbose": "HTTP Web 目录爆破：敏感中间件",
-    "general_module_key": "HTTP Web 目录爆破：敏感中间件",
+    "general_module_verbose": "vsFtpd 后门检查",
+    "general_module_key": "vsFtpd 后门检查",
     "is_general_module": true
 }

