@@ -1,5 +1,5 @@
-# [yak]目录爆破 's Document
+# [yak]综合目录扫描与爆破 's Document
 
-Author: sucre
+Author: v1ll4n
 
 '

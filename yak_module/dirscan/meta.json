@@ -1,105 +1,49 @@
 {
-    "name": "目录爆破",
+    "name": "综合目录扫描与爆破",
     "tags": [
-        "web"
+        "brute",
+        "dirscan",
+        "misc"
     ],
-    "help": "对web路径进行爆破",
-    "author": "sucre",
+    "help": "带有内置字典的综合目录扫描与爆破",
+    "author": "v1ll4n",
     "module_file": "yak_module.yak",
     "params": [
         {
+            "name": "types",
+            "verbose": "检查项目",
+            "description": "选择内置的字典来完成测试",
+            "type": "select",
+            "default_value": "admin,backup,robots-100",
+            "required": true,
+            "group": "",
+            "extra_setting": "{\"double\":true,\"data\":[{\"key\":\"爆破备份文件\",\"value\":\"backup\"},{\"key\":\"爆破后台\",\"value\":\"admin\"},{\"key\":\"爆破 API 接口\",\"value\":\"apipath\"},{\"key\":\"PHP 路径字典\",\"value\":\"php\"},{\"key\":\"JSP 路径字典\",\"value\":\"jsp\"},{\"key\":\"ASPX 路径字典\",\"value\":\"aspx\"},{\"key\":\"MDB 数据库字典\",\"value\":\"mdb-download\"},{\"key\":\"综合字典3000+\",\"value\":\"misc-gt-3000\"},{\"key\":\"robots.txt top100\",\"value\":\"robots-100\"}]}"
+        },
+        {
             "name": "concurrent",
-            "verbose": "并发量",
-            "description": "httpool的并发量",
+            "verbose": "并发数",
+            "description": "",
             "type": "uint",
-            "default_value": "50",
-            "required": false,
-            "group": "",
-            "extra_setting": ""
-        },
-        {
-            "name": "timeout",
-            "verbose": "超时时间",
-            "description": "http请求的超时时间",
-            "type": "uint",
-            "default_value": "5",
-            "required": false,
-            "group": "",
-            "extra_setting": ""
-        },
-        {
-            "name": "proxy",
-            "verbose": "代理",
-            "description": "设置代理",
-            "type": "string",
-            "default_value": "",
+            "default_value": "20",
             "required": false,
             "group": "",
             "extra_setting": ""
         },
         {
             "name": "target",
-            "verbose": "扫描目标",
-            "description": "设置目标",
-            "type": "string",
-            "default_value": "",
+            "verbose": "检测目标",
+            "description": "输入想要测试的目标：支持 IP / IP:Port / URL 等，可用逗号分隔，也可用换行分隔",
+            "type": "text",
+            "default_value": "http://10.129.227.148/",
             "required": true,
-            "group": "",
-            "extra_setting": ""
-        },
-        {
-            "name": "https",
-            "verbose": "https参数",
-            "description": "设置https扫描",
-            "type": "boolean",
-            "default_value": "",
-            "required": false,
-            "group": "",
-            "extra_setting": ""
-        },
-        {
-            "name": "head",
-            "verbose": "设置不用head方式扫描",
-            "description": "默认使用head扫描",
-            "type": "boolean",
-            "default_value": "",
-            "required": false,
-            "group": "",
-            "extra_setting": ""
-        },
-        {
-            "name": "redirectTimes",
-            "verbose": "重定向次数",
-            "description": "设置重定向的次数",
-            "type": "uint",
-            "default_value": "",
-            "required": false,
-            "group": "",
-            "extra_setting": ""
-        },
-        {
-            "name": "debug",
-            "verbose": "debug模式",
-            "description": "",
-            "type": "boolean",
-            "default_value": "",
-            "required": false,
-            "group": "",
-            "extra_setting": ""
-        },
-        {
-            "name": "file",
-            "verbose": "目录字典",
-            "description": "设置扫描的目录字典 可以参考  https://github.com/insightglacier/Dictionary-Of-Pentesting",
-            "type": "string",
-            "default_value": "",
-            "required": false,
             "group": "",
             "extra_setting": ""
         }
     ],
     "document": "document.md",
-    "general_module_verbose": "",
-    "general_module_key": "",
-    "is_general_module": false
+    "general_module_verbose": "综合目录扫描与爆破",
+    "general_module_key": "综合目录扫描与爆破",
+    "is_general_module": true,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
 }
