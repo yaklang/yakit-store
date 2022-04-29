@@ -14,6 +14,7 @@ if target == "" {
 
 concurrent = cli.Int("concurrent", cli.setDefault(6))
 
+yakit.Info("解析参数字典分类...")
 enableDefaultRobots = str.Contains(types, `robots-100`)
 enableAdminBrute = str.Contains(types, "admin")
 enableBackupBrute = str.Contains(types, "backup")
@@ -26,7 +27,7 @@ enableMiscGt3000Brute = str.Contains(types, "misc-gt-3000")
 //生成备份文件字典
 backupFileNames = make([]string)
 if enableBackupBrute {
-    backupFileNames = fuzz.Strings(`{{list({{int(1-3)}}|vip|www|root|wwwroot|config|inetpub|ftp|20{{int(13-25)}}|new|backup|newbackup|new|old|oldwww|webroot|home|network|email|soft|hacker|wwroot|12345|wangzhan|0000|hi|123456|12345678|100|6|web|server|linux|ubuntu|host|beifen|88|8|pwd|java|cgi|master|telnet|site|bbs|guest|11|back|database|w|123|databack|news|db|user|english|pass|bak|databak|net|homepage|login|test|file|admin|log|新建文件夹|sql|hotmail|mail|html|备份|ma|robot|password|passwd)}}.{{list(zip|rar|tar.gz|tar)}}`)
+    backupFileNames = fuzz.Strings(`{{list({{int(1-3)}}|vip|www|root|wwwroot|config|inetpub|ftp|20{{int(13-25)}}|new|backup|newbackup|new|old|oldwww|webroot|home|network|email|soft|hacker|wwroot|12345|wangzhan|0000|hi|123456|12345678|100|6|web|server|linux|ubuntu|host|beifen|88|8|pwd|java|cgi|master|telnet|site|bbs|guest|11|back|database|w|123|databack|news|db|user|english|pass|bak|databak|net|homepage|login|test|file|admin|log|%E6%96%B0%E5%BB%BA%E6%96%87%E4%BB%B6%E5%A4%B9|sql|hotmail|mail|html|%E5%A4%87%E4%BB%BD|ma|robot|password|passwd)}}.{{list(zip|rar|tar.gz|tar)}}`)
 }
 
 robotsPath = make([]string)
@@ -5508,16 +5509,37 @@ if concurrent <= 0 {
 swg = sync.NewSizedWaitGroup(concurrent)
 lock = sync.NewLock()
 
+yakit.Info("正在合并字典")
 count = 0
 all = appendDics(robotsPath, backupFileNames, jspPath, phpPath, aspxPath, mdbPath, gt3000)
 targets = str.ParseStringToHosts(target)
 
+
+enableTableOnce = sync.NewOnce()
+addTable = func(url, statusCode, contentLength, title) {
+    enableTableOnce.Do(func(){
+        yakit.EnableTable("爆破结果", ["URL", "StatusCode", "ContentLength", "Title"])
+    })
+
+    data = make(map[string]var)
+    data["URL"] = url
+    data["StatusCode"] = statusCode
+    data["ContentLength"] = contentLength
+    data["Title"] = title
+    yakit.TableData("爆破结果", data)
+}
+
 total = len(all) * len(targets)
+yakit.Info("共至少需要发送：%v", v2/*type ...any*/)
 add = func() {
     lock.Lock()
     defer lock.Unlock()
     count++
-    yakit.StatusCard("已发请求", sprintf("%v/%v", count, total))
+    // yakit.StatusCard("已发请求", sprintf("%v/%v", count, total))
+    if total <= 0 {
+        return
+    }
+    yakit.SetProgress(float(count)/float(total))
 }
 
 // 设置用户代理
@@ -5533,7 +5555,7 @@ abandonedMap = sync.NewMap()
 standard404Map = sync.NewMap()
 sample404Map = sync.NewMap()
 
-handleResult = func(targetRaw, path) {
+handleResult = func(targetRaw, path, isTls) {
     swg.Add()
     go func{
         defer swg.Done()
@@ -5541,11 +5563,11 @@ handleResult = func(targetRaw, path) {
 
         addr = targetRaw
 
-        resultResponse, req, err = poc.HTTP(`GET {{params(path)}} HTTP/1.1
+        resultResponse, resultRequest, err = poc.HTTP(`GET {{params(path)}} HTTP/1.1
 Host: {{params(target)}}
 User-Agent: {{params(ua)}}
 `, poc.params({
-    "path": codec.EscapePathUrl(path), "target": addr,
+    "path": path, "target": addr,
     "ua": ua, 
 }), poc.timeout(10))
         add()
@@ -5561,12 +5583,16 @@ User-Agent: {{params(ua)}}
         if rspIns1 != nil {
             yakit.Info("[%v] %v: %v", rspIns1.StatusCode, addr, path)
 
+            url, _ = str.ExtractURLFromHTTPRequestRaw(resultRequest, isTls)
+            _, body = str.SplitHTTPHeadersAndBodyFromPacket(resultResponse)
+            title = str.ExtractTitle(body)
+
             _, check404 = standard404Map.Load(addr)
             if check404 {
                 if rspIns1.StatusCode == 404 {
                     return
                 } else {
-                    yakit.StatusCard(path, sprint(rspIns1.StatusCode))
+                    addTable(url.String(), rspIns1.StatusCode, len(body), title)
                 }
                 return
             }
@@ -5577,36 +5603,45 @@ User-Agent: {{params(ua)}}
                 if judge.CompareRaw(rspOrigin, resultResponse) > 0.85 {
                     return
                 }
-                yakit.StatusCard(path, sprint(rspIns1.StatusCode))
+                addTable(url.String(), rspIns1.StatusCode, len(body), title)
                 return
             }
-
-            // 盲猜 206 或大于 404 这种
-            // 不等于 200 或者 404
-            if rspIns1.StatusCode == 206 || rspIns1.StatusCode > 404 {
-                yakit.StatusCard(path, sprint(rspIns1.StatusCode))
+            
+            // 啥都没有的话，不是404就报
+            if rspIns1.StatusCode != 404 {
+                addTable(url.String(), rspIns1.StatusCode, len(body), title)
             }
         }
     }
 }
 defer swg.Wait()
 
+yakit.Info("开始执行 Web 目录爆破")
 for _, t = range targets {
     host, port, _ = str.ParseStringToHostPort(t)
     if port <= 0 {
         port = 80
     }
     if host == "" {
-        host = targetRaw
+        host = t
     }
     addr = str.HostPort(host, port)
+
+    yakit.Info("checking TLS for %v", addr)
+    isHttps = false
+    if str.HasPrefix(t, "http://") || str.HasPrefix(t, "https://") {
+        isHttps = str.HasPrefix(t, "https://")
+    } else{
+        isHttps = str.IsTLSServer(addr)
+    }
+
     rsp, req, err = poc.HTTP(`GET /{{rs}} HTTP/1.1
 Host: {{params(target)}}
 User-Agent: {{params(ua)}}
 `, poc.params({
     "target": addr,
     "ua": ua, 
-}), poc.timeout(10))
+}), poc.timeout(10), poc.https(isHttps))
     if err != nil && sprint(err) != "<nil>" {
         yakit.Info("Target: %v 无法连接：%v", addr, err)
         return
@@ -5625,7 +5660,7 @@ User-Agent: {{params(ua)}}
             yakit.Info("Target: %v 无法连接：%v", addr, err)
             break
         }
-        handleResult(addr, path)
+        handleResult(addr, path, isHttps)
     }
 }
 

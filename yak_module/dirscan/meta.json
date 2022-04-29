@@ -34,7 +34,7 @@
             "verbose": "检测目标",
             "description": "输入想要测试的目标：支持 IP / IP:Port / URL 等，可用逗号分隔，也可用换行分隔",
             "type": "text",
-            "default_value": "http://10.129.227.148/",
+            "default_value": "",
             "required": true,
             "group": "",
             "extra_setting": ""
