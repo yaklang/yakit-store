@@ -1,0 +1,68 @@
+{
+    "name": "Fofa查询",
+    "tags": [
+        "信息收集",
+        "辅助"
+    ],
+    "help": "通过Fofa api查询并导入IP端口数据库",
+    "author": "Alex-null",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "fofasave",
+            "verbose": "存入端口资产",
+            "description": "默认开启，开启会将结果存入端口资产",
+            "type": "boolean",
+            "default_value": "true",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "fofamaxpage",
+            "verbose": "请求条数",
+            "description": "https://fofa.info/static_pages/api_help",
+            "type": "uint",
+            "default_value": "100",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "fofafilter",
+            "verbose": "Fofa查询语法",
+            "description": "如查找qq.com所有host，可以是domain==\"qq.com\" 查询语法，请参考https://fofa.info/static_pages/api_help",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "fofaemail",
+            "verbose": "Fofa邮箱",
+            "description": "https://fofa.info/personalData",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "Fofakey",
+            "verbose": "FofaAPI",
+            "description": "https://fofa.info/personalData",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

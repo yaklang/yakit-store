@@ -1,0 +1,55 @@
+yakit.AutoInitYakit()
+log.setLevel("info")
+fofaemail := cli.String("fofaemail")
+Fofakey := cli.String("Fofakey")
+fofafilter = cli.String("fofafilter")
+fofamaxpage = cli.Int("fofamaxpage")
+//是否入库 默认开启，开启会将结果存入端口资产
+log.info("Fofa查询条件 %v", fofafilter)
+yakit.Info("Fofa查询条件 %v", fofafilter)
+
+fofasave = cli.Bool("fofasave")
+if fofasave{
+    log.info("结果将存入端口资产")
+    yakit.Info("结果将存入端口资产")
+}else{
+    log.info("结果将不会存入端口资产")
+    yakit.Info("结果将不会存入端口资产")
+}
+
+//C段表
+yakit.EnableTable("涉及C段表", ["涉及C段"])
+outputTableCClass = func(network) {
+    data = make(map[string]var)
+    data["涉及C段"] = network
+    yakit.TableData("涉及C段表", data)
+}
+
+yakit.EnableTable("Fafa结果表", ["Addr","Host","HtmlTitle" ,"Domains","Url"])
+outputTable = func(Addr,Host,HtmlTitle ,Domains,Url) {
+    data = make(map[string]var)
+    data["Addr"] = Addr
+    data["Host"] = Host
+    data["HtmlTitle"] = HtmlTitle
+    data["Domains"] = Domains
+    data["Url"] = Url
+    yakit.TableData("Fafa结果表", data)
+}
+
+res, err := spacengine.FofaQuery(fofaemail,Fofakey,fofafilter, spacengine.maxRecord(fofamaxpage))
+if err != nil{
+    log.error("fofa搜索出错%v",err)
+    yakit.Error("fofa搜索出错%v",err)
+}
+die(err)
+
+for r := range res {
+    log.info("%v %v %v %v %v", r.Addr,r.Host,r.HtmlTitle,r.Domains,r.Url)
+    if fofasave{
+        db.SavePortFromResult(r)
+    }   
+    outputTable(r.Addr,r.Host,r.HtmlTitle ,r.Domains,r.Url)
+    network = str.IPv4ToCClassNetwork(str.ParseStringToHostPort(r.Addr)[0])
+    log.info("C段%v", network)
+    outputTableCClass(network)
+}
