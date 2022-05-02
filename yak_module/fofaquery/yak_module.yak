@@ -7,6 +7,31 @@ fofamaxpage = cli.Int("fofamaxpage")
 //是否入库 默认开启，开启会将结果存入端口资产
 log.info("Fofa查询条件 %v", fofafilter)
 yakit.Info("Fofa查询条件 %v", fofafilter)
+//email及apikey持久化
+if fofaemail == ""{
+    if Fofakey ==""{
+        fofaemail = db.GetKey("fofaemail")
+        Fofakey = db.GetKey("Fofakey")
+    }else {
+        err=db.SetKey("Fofakey", Fofakey)
+        die(err)
+    }
+}elif Fofakey == ""{
+        err =db.SetKey("fofaemail", fofaemail)
+        die(err)
+        
+        Fofakey=db.GetKey("Fofakey")
+}else{
+        err = db.SetKey("fofaemail", fofaemail)
+        die(err)
+        err =db.SetKey("Fofakey", Fofakey)
+        die(err)
+}
+fofaemail = db.GetKey("fofaemail")
+Fofakey = db.GetKey("Fofakey")
+
+log.info("Fofa Email:%v Fofa API KEY:%v",fofaemail,Fofakey)
+yakit.Info("Fofa Email:%v Fofa API KEY:%v",fofaemail,Fofakey)
 
 fofasave = cli.Bool("fofasave")
 if fofasave{
