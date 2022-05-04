@@ -38,6 +38,36 @@
             "required": true,
             "group": "",
             "extra_setting": ""
+        },
+        {
+            "name": "exclude-status-code",
+            "verbose": "临时排除状态码",
+            "description": "需要临时排除一下误报或干扰项（通过状态码）",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "tempdict",
+            "verbose": "临时字典(小)",
+            "description": "添加几行临时字典，可以帮助用户快速设置",
+            "type": "text",
+            "default_value": "",
+            "required": false,
+            "group": "额外字典扩充",
+            "extra_setting": ""
+        },
+        {
+            "name": "user-dict",
+            "verbose": "用户自定义目录",
+            "description": "使用用户自定义目录",
+            "type": "upload-path",
+            "default_value": "",
+            "required": false,
+            "group": "额外字典扩充",
+            "extra_setting": "{\"isTextArea\":false}"
         }
     ],
     "document": "document.md",

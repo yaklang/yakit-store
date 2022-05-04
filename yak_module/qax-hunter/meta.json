@@ -1,0 +1,79 @@
+{
+    "name": "空间引擎: Hunter",
+    "tags": [
+        "hunter",
+        "qax",
+        "batch"
+    ],
+    "help": "使用 Hunter 语法搜索数据并导入 Yakit 插件执行",
+    "author": "v1ll4n",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "query",
+            "verbose": "Hunter 搜索",
+            "description": "Hunter 搜索语法可参考 https://hunter.qianxin.com/home/helpCenter?r=2-2",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "no-autosave-api-key",
+            "verbose": "不自动保存 Key",
+            "description": "",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": "APIKey",
+            "extra_setting": ""
+        },
+        {
+            "name": "api-key",
+            "verbose": "APIKey",
+            "description": "配置 APIKey，如果不配置会使用自动保存的内容。",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "APIKey",
+            "extra_setting": ""
+        },
+        {
+            "name": "api-username",
+            "verbose": "Hunter 用户名",
+            "description": "APIKey 对应的用户名，如果不配置使用上次配置的用户名",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "APIKey",
+            "extra_setting": ""
+        },
+        {
+            "name": "max-page",
+            "verbose": "最大页数",
+            "description": "",
+            "type": "uint",
+            "default_value": "20",
+            "required": false,
+            "group": "Query Parameters",
+            "extra_setting": ""
+        },
+        {
+            "name": "max-record",
+            "verbose": "查询最大数量",
+            "description": "",
+            "type": "uint",
+            "default_value": "20",
+            "required": false,
+            "group": "Query Parameters",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "BatchHack: Hunter",
+    "general_module_key": "BatchHack: Hunter",
+    "is_general_module": true,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

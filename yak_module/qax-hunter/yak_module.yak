@@ -1,0 +1,177 @@
+yakit.AutoInitYakit()
+
+# Input your code!
+loglevel("info")
+
+// 处理查询语句
+query = cli.String("query")
+if query == "" {
+    yakit.Error("Hunter 查询语句为空")
+    return
+}
+
+// 处理 APIKey
+yakit.Info("开始处理 APIKey 参数")
+hunterAPIkeyFieldName = "BATCH_HACK_HUNTER_APIKEY"
+hunterAPINameFieldName = "BATCH_HACK_HUNTER_USERNAME"
+
+yakit.Info("正在获取本地 APIKey 参数")
+apikey = db.GetKey(hunterAPIkeyFieldName)
+apiUsername = db.GetKey(hunterAPINameFieldName)
+
+saveApiKey = !cli.Have("no-autosave-api-key")
+if apikey == "" {
+    apikey = cli.String("api-key")
+}
+if apiUsername == "" {
+    apiUsername = cli.String("api-username")
+}
+
+if apikey == "" || apiUsername == "" {
+    yakit.Info("APIKey 或 APIUsername 为空")
+    return
+}
+
+if saveApiKey {
+    db.SetKey(hunterAPIkeyFieldName, apikey)
+    db.SetKey(hunterAPINameFieldName, apiUsername)
+}
+
+
+// 设置参数
+maxPage = cli.Int("max-page", cli.setDefault(5))
+maxRecord = cli.Int("max-record", cli.setDefault(50))
+
+res, err = spacengine.HunterQuery(apiUsername, apikey, query, spacengine.maxPage(maxPage), spacengine.maxRecord(maxRecord))
+if err != nil {
+    yakit.Error("Query Hunter Failed: %s", err)
+    return
+}
+
+// 加载 Yakit 插件
+scriptNameFile = cli.String("--yakit-plugin-file")
+manager, err = hook.NewMixPluginCaller()
+if err != nil {
+    yakit.Error("build mix plugin caller failed: %s", err)
+    die(err)
+}
+scriptNames = x.If(scriptNameFile != "", x.Filter(
+    x.Map(
+        str.Split(string(file.ReadFile(scriptNameFile)[0]), "|"), 
+        func(e){return str.TrimSpace(e)},
+    ), func(e){return e!=""}), make([]string))
+
+
+x.Foreach(scriptNames, func(e){
+    yakit.Info("Start to Load Plugin: %v", e)
+    err = manager.LoadPlugin(e)
+    if err != nil {
+        yakit.Error("load plugin[%v] error: %v", e, err)
+    }
+    println(e + " Is Loaded")
+})
+
+// 处理结果
+concurrent = cli.Int("concurrent", cli.setDefault(20))
+swg = sync.NewSizedWaitGroup(concurrent)
+
+// 控制插件处理与执行
+pluginCount = 0
+pluginTaskLock = sync.NewLock()
+addPluginTask = func() {
+    pluginTaskLock.Lock()
+    defer pluginTaskLock.Unlock()
+    pluginCount ++
+    yakit.StatusCard("正在执行插件任务", pluginCount)
+}
+subPluginTask = func() {
+    pluginTaskLock.Lock()
+    defer pluginTaskLock.Unlock()
+    pluginCount --
+    yakit.StatusCard("正在执行插件任务", pluginCount)
+}
+
+handleResult = func(result) {
+    swg.Add()
+    addPluginTask()
+    go func{
+        defer swg.Done()
+        defer func{ subPluginTask() }
+
+        defer func{
+            err = recover()
+            if err != nil {
+                yakit.Error("handle result met error: %s", err)
+            }
+        }
+
+        host, port, _ = str.ParseStringToHostPort(result.Addr)
+        if host == "" {
+            return
+        }
+        matchResult, err = servicescan.ScanOne(host, port)
+        println(matchResult.String())            
+        manager.HandleServiceScanResult(matchResult)
+    }
+}
+
+cache = sync.NewMap()
+count = 0
+for result = range res {
+    if (str.Contains(result.Addr, "违规数据")) {
+        continue
+    }
+    if cache.Load(result.Addr)[1] {
+        continue
+    }
+    cache.Store(result.Addr, result.Addr)
+
+    count++
+    yakit.StatusCard("获取结果数", count)
+    yakit.Info("Found %v from hunter", result.Addr)
+    db.SavePortFromResult(result)
+    handleResult(result)
+}
+
+swg.Wait()
+
+/*
+type palm/server/dbm/falcons/spacengine.(NetSpaceEngineResult) struct {
+  Fields(可用字段): 
+      Addr: string  
+      FromEngine: string  
+      Latitude: float64  
+      Longitude: float64  
+      HtmlTitle: string  
+      Domains: string  
+      Province: string  
+      Url: string  
+      ConfirmHttps: bool  
+      Host: string  
+      City: string  
+      Asn: string  
+      Location: string  
+      ServiceProvider: string  
+      FromFilter: string  
+      Fingerprints: string  
+      Banner: string  
+  StructMethods(结构方法/函数): 
+  PtrStructMethods(指针结构方法/函数): 
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

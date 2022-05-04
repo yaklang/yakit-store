@@ -13,6 +13,29 @@ if target == "" {
 }
 
 concurrent = cli.Int("concurrent", cli.setDefault(6))
+excludedCode = cli.String("exclude-status-code")
+
+userdict = cli.String("user-dict")
+userPaths = make([]string)
+for _, dict = range str.SplitAndTrim(userdict, ",") {
+    fileRaw = io.ReadFile(dict)[0]
+    if len(fileRaw) <= 0 {
+        yakit.Error("加载文件失败：%v", dict)
+        continue
+    }
+    lines = str.ParseStringToLines(string(fileRaw))
+    userPaths = append(userPaths, lines...)
+}
+
+// 正在加载用户自定义字典
+yakit.Info("正在加载用户临时字典")
+tempdictRaw = cli.String("tempdict")
+lines = str.ParseStringToLines(tempdictRaw)
+dump(lines)
+if len(lines) > 0 {
+    userPaths = append(userPaths, lines...)
+}
+yakit.Info("加载用户字典共 %v 条", len(userPaths))
 
 yakit.Info("解析参数字典分类...")
 enableDefaultRobots = str.Contains(types, `robots-100`)
@@ -5511,12 +5534,21 @@ lock = sync.NewLock()
 
 yakit.Info("正在合并字典")
 count = 0
-all = appendDics(robotsPath, backupFileNames, jspPath, phpPath, aspxPath, mdbPath, gt3000)
+all = appendDics(userPaths, robotsPath, backupFileNames, jspPath, phpPath, aspxPath, mdbPath, gt3000)
 targets = str.ParseStringToHosts(target)
 
 
 enableTableOnce = sync.NewOnce()
 addTable = func(url, statusCode, contentLength, title) {
+    if excludedCode != "" {
+        codes = str.ParseStringToPorts(excludedCode)
+        for _, code = range codes {
+            if code == statusCode {
+                return
+            }
+        }
+    }
+
     enableTableOnce.Do(func(){
         yakit.EnableTable("爆破结果", ["URL", "StatusCode", "ContentLength", "Title"])
     })
