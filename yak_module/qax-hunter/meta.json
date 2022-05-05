@@ -74,6 +74,6 @@
     "general_module_verbose": "BatchHack: Hunter",
     "general_module_key": "BatchHack: Hunter",
     "is_general_module": true,
-    "enable_plugin_selector": false,
-    "plugin_selector_types": ""
+    "enable_plugin_selector": true,
+    "plugin_selector_types": "mitm,port-scan"
 }
