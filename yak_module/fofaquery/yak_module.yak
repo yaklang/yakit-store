@@ -5,15 +5,36 @@ Fofakey := cli.String("Fofakey")
 fofafilter = cli.String("fofafilter")
 fofamaxpage = cli.Int("fofamaxpage")
 //是否入库 默认开启，开启会将结果存入端口资产
-log.info("Fofa查询条件 %v", fofafilter)
 yakit.Info("Fofa查询条件 %v", fofafilter)
+//email及apikey持久化
+if fofaemail == ""{
+    if Fofakey ==""{
+        fofaemail = db.GetKey("fofaemail")
+        Fofakey = db.GetKey("Fofakey")
+    }else {
+        err=db.SetKey("Fofakey", Fofakey)
+        die(err)
+    }
+}elif Fofakey == ""{
+        err =db.SetKey("fofaemail", fofaemail)
+        die(err)
+        
+        Fofakey=db.GetKey("Fofakey")
+}else{
+        err = db.SetKey("fofaemail", fofaemail)
+        die(err)
+        err =db.SetKey("Fofakey", Fofakey)
+        die(err)
+}
+fofaemail = db.GetKey("fofaemail")
+Fofakey = db.GetKey("Fofakey")
+
+yakit.Info("Fofa Email:%v Fofa API KEY:%v",fofaemail,Fofakey)
 
 fofasave = cli.Bool("fofasave")
 if fofasave{
-    log.info("结果将存入端口资产")
     yakit.Info("结果将存入端口资产")
 }else{
-    log.info("结果将不会存入端口资产")
     yakit.Info("结果将不会存入端口资产")
 }
 
@@ -38,7 +59,6 @@ outputTable = func(Addr,Host,HtmlTitle ,Domains,Url) {
 
 res, err := spacengine.FofaQuery(fofaemail,Fofakey,fofafilter, spacengine.maxRecord(fofamaxpage))
 if err != nil{
-    log.error("fofa搜索出错%v",err)
     yakit.Error("fofa搜索出错%v",err)
 }
 die(err)
