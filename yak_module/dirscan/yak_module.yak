@@ -6,6 +6,23 @@ if types == "" {
     types = "admin,backup"
 }
 
+userPrefix = cli.String("userprefix")
+if userPrefix != "" {
+    if !str.HasPrefix(userPrefix, "/") {
+        userPrefix = "/" + userPrefix
+    }
+}
+
+keyword404Str = cli.String("keyword404", cli.setDefault("404 Not Found|页面不存在"))
+keyword404 = str.SplitAndTrim(keyword404Str, "|")
+
+proxyStr = cli.String("proxy")
+proxy = make([]string)
+if proxyStr != "" {
+    yakit.Info("使用代理：%v", proxyStr)
+    proxy = str.ParseStringToHosts(proxyStr)
+}
+
 target = cli.String("target")
 if target == "" {
     yakit.Error("目标为空，请输入合理的目标")
@@ -5520,6 +5537,18 @@ if enableMiscGt3000Brute {
 
 appendDics = func(dic...) {
     all = make([]string)
+    if userPrefix != "" {
+        for _, dict = range dic {
+            for _, subLine = range dict {
+                if !str.HasPrefix(subLine, "/") {
+                    subLine = "/" + subLine
+                }
+                all = append(all, sprintf("%v%v", userPrefix, subLine))
+            }
+        }
+        return all
+    }
+
     for _, dict = range dic {
         all = append(all, dict...)
     }
@@ -5549,6 +5578,12 @@ addTable = func(url, statusCode, contentLength, title) {
         }
     }
 
+    if len(keyword404) > 0 {
+        if str.MatchAllOfSubString(title, keyword404...) {
+            return
+        }
+    }
+
     enableTableOnce.Do(func(){
         yakit.EnableTable("爆破结果", ["URL", "StatusCode", "ContentLength", "Title"])
     })
@@ -5562,7 +5597,7 @@ addTable = func(url, statusCode, contentLength, title) {
 }
 
 total = len(all) * len(targets)
-yakit.Info("共至少需要发送：%v", v2/*type ...any*/)
+yakit.Info("共至少需要发送：%v", total)
 add = func() {
     lock.Lock()
     defer lock.Unlock()
@@ -5601,7 +5636,7 @@ User-Agent: {{params(ua)}}
 `, poc.params({
     "path": path, "target": addr,
     "ua": ua, 
-}), poc.timeout(10))
+}), poc.timeout(10), poc.proxy(proxy...), poc.https(isTls))
         add()
         if err != nil && sprint(err) != "<nil>" {
             err = sprint(err)
@@ -5673,7 +5708,7 @@ User-Agent: {{params(ua)}}
 `, poc.params({
     "target": addr,
     "ua": ua, 
-}), poc.timeout(10), poc.https(isHttps))
+}), poc.timeout(10), poc.https(isHttps), poc.proxy(proxy...))
     if err != nil && sprint(err) != "<nil>" {
         yakit.Info("Target: %v 无法连接：%v", addr, err)
         return

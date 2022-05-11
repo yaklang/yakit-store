@@ -68,6 +68,36 @@
             "required": false,
             "group": "额外字典扩充",
             "extra_setting": "{\"isTextArea\":false}"
+        },
+        {
+            "name": "userprefix",
+            "verbose": "路径爆破前缀",
+            "description": "添加用户前缀",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "proxy",
+            "verbose": "添加代理",
+            "description": "支持 HTTP / HTTPS / SOCKS 代理",
+            "type": "string",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "keyword404",
+            "verbose": "排除标题黑名单",
+            "description": "以 `|` 作为分割，按照页面标题排除 404",
+            "type": "string",
+            "default_value": "页面不存在|404 Not Found|Not Found|No Page",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
         }
     ],
     "document": "document.md",
