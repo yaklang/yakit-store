@@ -28,6 +28,10 @@ handle = func(result /* *fp.MatchResult */) {
     if (!result.IsOpen()) {
         return
     }
+
+    if len(result.Fingerprint.HttpFlows) <= 0 {
+        return
+    }
     
     hostport = str.ParseStringToUrls(str.HostPort(result.Target, result.Port))
     for _, url = range hostport {
