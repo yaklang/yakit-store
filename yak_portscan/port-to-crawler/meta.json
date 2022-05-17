@@ -16,20 +16,24 @@
             "type": "string",
             "default_value": "8080",
             "required": false,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         },
         {
             "name": "target",
             "verbose": "扫描的目标",
             "description": "",
             "type": "string",
-            "default_value": "cybertunnel.run",
+            "default_value": "http://127.0.0.1:8080",
             "required": true,
-            "group": ""
+            "group": "",
+            "extra_setting": ""
         }
     ],
     "document": "document.md",
-    "general_module_verbose": "",
-    "general_module_key": "",
-    "is_general_module": true
+    "general_module_verbose": "Web 基础爬虫：表单与上传文件检测",
+    "general_module_key": "Web 基础爬虫：表单与上传文件检测",
+    "is_general_module": true,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
 }

@@ -41,15 +41,12 @@ type palm/common/crawler.(req) struct {
 }
 */
 
-enableFormTableOnce = sync.NewOnce()
-LOGINFORM = "URL 分析"
-addLoginForm = func(req /*crawler.req*/) {
-    enableFormTableOnce.Do(func() {
-        yakit.EnableTable(LOGINFORM, [
-            "URL", "登录表单", "上传表单", "其他表单", "GET 参数", "POST 参数",
-        ])
-    })
-    yakit.Info("添加登陆表单：%v", req.Url())
+
+addLoginForm = func(req /*crawler.req*/, filter) {
+    url := req.Url()
+    host, port, _ = str.ParseStringToHostPort(url)
+    addr = str.HostPort(host, port)
+    
     data = make(map[string]var)
     data["URL"] = req.Url()
     data["登录表单"] = x.If(req.IsLoginForm(), "Yes", "")
@@ -67,15 +64,48 @@ addLoginForm = func(req /*crawler.req*/) {
             data["POST 参数"] = sprintf("%v", names)
         }
     }
-    yakit.TableData(LOGINFORM, data)
+
+    if data["登录表单"] == "Yes" {
+        risk.NewRisk(url, risk.level("low"), risk.type("login-form"), risk.typeVerbose("登录表单检测"), 
+            risk.title(sprintf("Maybe Login Form Found: %v", url)),
+            risk.titleVerbose(sprintf("监测到登录表单: %v", url)),
+            risk.details(data),
+        )
+    }
+
+    if data["上传表单"] == "Yes" {
+        risk.NewRisk(url, risk.level("middle"), risk.type("multipart-form"), risk.typeVerbose("上传表单检测"), 
+            risk.title(sprintf("Maybe Multipart Form Found: %v", url)),
+            risk.titleVerbose(sprintf("监测到上传(mutlipart)表单: %v", url)),
+            risk.details(data),
+        )
+    }
+
+    // 最基础的表单就不记录了，没有太大意义，太多了同时
+
+    // getParams = data["GET 参数"]
+    // postParams = data["POST 参数"]
+    // if data["其他表单"] == "Yes" && (getParams != undefined || postParams != undefined) {
+    //     hash = codec.Sha256([]byte(sprint(getParams, postParams, addr)))
+    //     if filter[hash] == undefined {
+    //         filter[hash] = hash
+    //     }else{
+    //         return
+    //     }
+    //     // risk.NewRisk(url, risk.level("info"), risk.type("unknown-form"), risk.typeVerbose("表单标签识别"), 
+    //     //     risk.title(sprintf("Unknown Form Detected: %v", url)),
+    //     //     risk.titleVerbose(sprintf("监测到位置表单（非登陆/上传）表单: %v", url)),
+    //     //     risk.details(data),
+    //     // )
+    // }
 }
 
-handleReq = func(req, match) {
+handleReq = func(req, match, filter) {
     if req == nil {
         return
     }
 
-    addLoginForm(req) 
+    addLoginForm(req, filter) 
 }
 
 
@@ -83,6 +113,7 @@ handle = func(result /* *fp.MatchResult */) {
     // handle match result
     // 匹配结果
     if result.IsOpen() && result.Fingerprint != nil && len(result.Fingerprint.HttpFlows) > 0 {
+        filterMap := make(map[string]var)
         res, err = crawler.Start(
             str.HostPort(result.Target, result.Port), crawler.maxRequest(50),
             crawler.autoLogin("admin", "password"), crawler.urlRegexpExclude(`(?i).*?\/?(logout|reset|delete|setup).*`),
@@ -90,7 +121,7 @@ handle = func(result /* *fp.MatchResult */) {
         die(err)
 
         for crawlerReq = range res {
-            handleReq(crawlerReq, result)
+            handleReq(crawlerReq, result, filterMap)
         }
     }
 }
