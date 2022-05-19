@@ -10,5 +10,5 @@
     "document": "document.md",
     "general_module_verbose": "Log4Shell 漏洞检测（自动检测版）",
     "general_module_key": "Log4Shell 漏洞检测（自动检测版）",
-    "is_general_module": true
+    "is_general_module": false
 }
