@@ -1,0 +1,40 @@
+{
+    "name": "ElasticSearch 未授权访问",
+    "tags": [
+        "elasticsearch",
+        "elastic",
+        "unauth",
+        "未授权访问"
+    ],
+    "help": "检查未授权访问以及基础操作",
+    "author": "v1ll4n",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "9200",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "ElasticSearch 未授权访问",
+    "general_module_key": "ElasticSearch 未授权访问",
+    "is_general_module": true,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}
