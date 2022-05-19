@@ -6,11 +6,13 @@
         "dnslog"
     ],
     "help": "通过 DNSLog 反连来扫描网站是否可能存在 FastJSON 漏洞",
-    "author": "v1ll4n",
+    "author": "v1ll4n,z3r0ne",
     "module_file": "yak_mitm.yak",
     "params": null,
     "document": "document.md",
     "general_module_verbose": "FastJSON 检测与初步探查",
     "general_module_key": "FastJSON 检测与初步探查",
-    "is_general_module": true
+    "is_general_module": true,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
 }
