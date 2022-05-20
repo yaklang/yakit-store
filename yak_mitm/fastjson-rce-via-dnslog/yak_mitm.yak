@@ -39,6 +39,7 @@ subTask = func() {
 }
 
 mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    
     addTask()
     defer subTask()
     defer func {
@@ -52,15 +53,16 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
     addr = str.HostPort(host, port)
 
     rspIns, err = poc.ParseBytesToHTTPResponse(rsp)
+    reqIns, err = poc.ParseBytesToHTTPRequest(req)
     if err != nil {
         println(err)
         return
     }
 
 
-    result = str.Join(rspIns.Header["Content-Type"], "; ")
-    if (!str.MatchAllOfSubString(str.ToLower(result), "json")) && (!str.IsJsonResponse(rspIns)) {
-        log.info("not a valid json type: %v", result)
+    rsqContentType = str.Join(rspIns.Header["Content-Type"], "; ")
+    reqContentType = str.Join(reqIns.Header["Content-Type"], "; ")
+    if (!str.MatchAllOfSubString(str.ToLower(rsqContentType), "json")) && (!str.IsJsonResponse(rspIns)) && !str.MatchAllOfSubString(str.ToLower(reqContentType), "json"){
         return
     }
 
