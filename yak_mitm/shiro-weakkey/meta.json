@@ -8,7 +8,9 @@
     "module_file": "yak_mitm.yak",
     "params": null,
     "document": "document.md",
-    "general_module_verbose": "",
-    "general_module_key": "",
-    "is_general_module": true
+    "general_module_verbose": "Shiro 指纹识别 + 弱密码检测",
+    "general_module_key": "Shiro 指纹识别 + 弱密码检测",
+    "is_general_module": true,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
 }

