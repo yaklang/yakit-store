@@ -1,0 +1,17 @@
+{
+    "name": "反defang",
+    "tags": [
+        "辅助",
+        "威胁情报"
+    ],
+    "help": "还原威胁情报defang后的IP、URL e.g. 127[.]0[.]0[.]1--\u003e127.0.0.1",
+    "author": "Alex-null",
+    "module_file": "codec.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}
