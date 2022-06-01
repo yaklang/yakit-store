@@ -1,0 +1,39 @@
+{
+    "name": "Alibaba Nacos系列漏洞检测",
+    "tags": [
+        "Alibaba Nacos",
+        "CVE-2021-29441",
+        "CVE-2021-29442"
+    ],
+    "help": "检测Alibaba Nacos未授权漏洞、认证绕过(CVE-2021-29441)、认证绕过(CVE-2021-29442)",
+    "author": "TBOsec",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "targetUrl",
+            "verbose": "目标地址",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "add_user",
+            "verbose": "尝试添加用户",
+            "description": "尝试通过未授权 添加后台用户",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}
