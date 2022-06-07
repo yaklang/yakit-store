@@ -2,7 +2,7 @@
 
 #--------------------------WORKSPACE-----------------------------
 __test__ = func() {
-    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://127.0.0.1:8009")
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "。。。")
     if err != nil {
         return
     }
@@ -148,9 +148,9 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
     shiroCookieKey = "rememberMe"
     if !str.MatchAllOfRegexp(reqHeader, "remem?berMe=") {
         yakit_output(sprintf("准备发送 shiro 探测请求 for: %v", url))
-        rsp, err = freq.FuzzCookie("rememberMe", "{{base64({{rs(10)}})}};").ExecFirst(httpool.context(ctx))
+        rsp, err = freq.FuzzCookie("rememberMe", "{{base64({{rs(10)}})}};").ExecFirst(httpool.context(ctx), httpool.https(isHttps))
         if err != nil || rsp.Error != nil {
-            yakit_output(sprintf("执行失败【%v】: %v & %v"))
+            yakit_output(sprintf("执行失败【%v】: %v & %v", url, err, rsp.Error))
             return
         }
 
@@ -200,7 +200,7 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
     }
 
     for _, cookieElement := range cookie {
-        result = freq.FuzzCookie(shiroCookieKey, cookieElement["cookie"]).ExecFirst()[0]
+        result = freq.FuzzCookie(shiroCookieKey, cookieElement["cookie"]).ExecFirst(httpool.https(isHttps))[0]
         if result == nil||result.Error != nil {
             yakit_output("FAILED for %v=%v", shiroCookieKey, cookieElement["cookie"])
             continue
