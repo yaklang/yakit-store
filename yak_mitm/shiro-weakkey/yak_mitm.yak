@@ -2,7 +2,7 @@
 
 #--------------------------WORKSPACE-----------------------------
 __test__ = func() {
-    results, err := yakit.GenerateYakitMITMHooksParams("GET", "。。。")
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://192.168.101.211:8009/")
     if err != nil {
         return
     }
@@ -200,6 +200,7 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
     }
 
     for _, cookieElement := range cookie {
+        yakit_output(sprintf("Shiro Try KEY: %v for %v", cookieElement["key"], url))
         result = freq.FuzzCookie(shiroCookieKey, cookieElement["cookie"]).ExecFirst(httpool.https(isHttps))[0]
         if result == nil||result.Error != nil {
             yakit_output("FAILED for %v=%v", shiroCookieKey, cookieElement["cookie"])
@@ -209,7 +210,7 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
         if headers == "" {
             continue
         }
-        if str.MatchAllOfSubString(headers, `(?i)remem?berMe\s*=\s*deleteMe;?`) {
+        if str.MatchAllOfRegexp(headers, `(?i)remem?berMe\s*=\s*deleteMe;?`) {
             continue
         }else{
             detail := {
