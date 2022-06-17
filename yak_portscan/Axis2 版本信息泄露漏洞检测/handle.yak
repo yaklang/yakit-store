@@ -1,0 +1,60 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+handleCheck = func(target,port,path){
+    addr = str.HostPort(target, port)
+    isTls = str.IsTLSServer(addr)
+
+    packet = `GET {{params(path)}}services/Version?getVersion HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cache-Control: no-cache
+Connection: close
+Content-Length: 0
+Dnt: 1
+Pragma: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36
+`
+
+    rsp,req,_ = poc.HTTP(packet, 
+    poc.params({"target":addr,"path":path,}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+    // dump(rsp)
+    if len(rsp) > 0 {
+        
+        if str.MatchAllOfSubString(rsp, "Hi - the Axis2 version is"){
+            r,_ = re.Compile(`<ns:return>(?s:(.*?))</ns:return>`)
+            res = r.FindStringSubmatch(string(rsp))[1]
+            yakit.Info("%v found Axis2 version info %v", addr,res)
+            risk.NewRisk(
+            addr,risk.title("Axis2 version"),
+            risk.severity("info"),
+            risk.titleVerbose("Axis2 版本信息泄露漏洞"),
+            risk.type("info[Axis2]"),
+            risk.payload(`/services/Version?getVersion`),
+        )
+        }
+       
+    }
+
+    return
+}
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen(){
+        return
+    }
+    r,_ = re.Compile(`Path=(.*?);`)
+    path = r.FindStringSubmatch(string(result.Fingerprint))[1]
+    // println(path)
+    if len(result.Fingerprint.HttpFlows)>0{
+        handleCheck(result.Target,result.Port,path)
+    }
+    
+}

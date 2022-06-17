@@ -1,0 +1,37 @@
+{
+    "name": "ThinkPHP_2.x~3.0Beta远程代码执行漏洞检测",
+    "tags": [
+        "ThinkPHP"
+    ],
+    "help": "ThinkPHP 2.x版本中，使用preg_replace的/e模式匹配路由：$res = preg_replace('@(w+)'.$depr.'([^'.$depr.'/]+)@e', '$var['1']=\"2\";', implode($depr,$paths));导致用户的输入参数被插入双引号中执行，造成任意代码执行漏洞。",
+    "author": "Fariy",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

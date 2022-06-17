@@ -1,0 +1,61 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+handleCheck = func(target,port,payload){
+    addr = str.HostPort(target, port)
+    isTls = str.IsTLSServer(addr)
+
+    packet = `
+GET {{params(payload)}} HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Cache-Control: no-cache
+Pragma: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0
+
+`
+
+    rsp,req,_ = poc.HTTP(packet, 
+    poc.params({"target":addr,"payload":payload,}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+    rsp1,req1,_ = poc.HTTP(packet, 
+    poc.params({"target":addr,"payload":payload1,}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+    // dump(rsp)
+    if len(rsp) > 0 && len(rsp1) >0 {
+        
+        if str.MatchAllOfSubString(rsp,`HTTP/1.1 404`) && str.MatchAllOfSubString(rsp1, `HTTP/1.1 400`){
+            yakit.Info("%v found IIS 短文件名漏洞 ", addr)
+            risk.NewRisk(
+            addr,risk.title("IIS 短文件名"),
+            risk.severity("low"),
+            risk.titleVerbose("IIS 短文件名漏洞"),
+            risk.type("info[IIS]"),
+            risk.payload(`/*~1****/a.aspx /abcedf*~1****/a.aspx`),
+        )
+        }
+       
+    }
+
+    return
+}
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen(){
+        return
+    }
+    payload = `/*~1****/a.aspx`
+    payload1 = `/abcedf*~1****/a.aspx`
+    if len(result.Fingerprint.HttpFlows)>0{
+        handleCheck(result.Target,result.Port,payload)
+    }
+    
+}
