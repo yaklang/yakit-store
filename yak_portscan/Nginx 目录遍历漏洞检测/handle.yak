@@ -1,0 +1,50 @@
+# port scan plugin
+yakit.AutoInitYakit()
+
+handleCheck = func(target,port){
+    addr = str.HostPort(target, port)
+    isTls = str.IsTLSServer(addr)
+
+    packet = `GET /files../ HTTP/1.1
+Host: {{params(target)}}
+Accept: */*
+Accept-Encoding: gzip
+User-Agent: curl/7.77.0
+
+`
+
+    rsp,req,_ = poc.HTTP(packet, 
+    poc.params({"target":addr}),
+    poc.https(isTls),
+    poc.redirectTimes(0),
+    )
+    // dump(rsp)
+    if len(rsp) > 0 {
+        
+        if str.MatchAllOfSubString(rsp, "Index of"){
+            yakit.Info("%v found Nginx 目录遍历漏洞", addr)
+            risk.NewRisk(
+            addr,risk.title("Nginx 目录遍历漏洞"),
+            risk.severity("medium"),
+            risk.titleVerbose("Nginx 目录遍历漏洞"),
+            risk.type("leakInfo[Nginx]"),
+            risk.payload(`/files../`),
+        )
+        }
+       
+    }
+
+    return
+}
+
+handle = func(result /* *fp.MatchResult */) {
+    // handle match result
+    if !result.IsOpen(){
+        return
+    }
+
+    if len(result.Fingerprint.HttpFlows)>0{
+        handleCheck(result.Target,result.Port)
+    }
+    
+}

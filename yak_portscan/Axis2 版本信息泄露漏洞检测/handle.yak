@@ -36,7 +36,11 @@ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
             risk.severity("info"),
             risk.titleVerbose("Axis2 版本信息泄露漏洞"),
             risk.type("info[Axis2]"),
-            risk.payload(`/services/Version?getVersion`),
+            risk.payload(str.f(`%s/services/Version?getVersion`,path)),
+            risk.details({"target":addr,
+                    "response":rsp,
+                    "request":req,
+                }),
         )
         }
        
@@ -51,10 +55,19 @@ handle = func(result /* *fp.MatchResult */) {
         return
     }
     r,_ = re.Compile(`Path=(.*?);`)
-    path = r.FindStringSubmatch(string(result.Fingerprint))[1]
-    // println(path)
+    path = r.FindStringSubmatch(string(result.Fingerprint))
+    if len(path) == 0 {
+        path = "/"
+    } else {
+        path = r.FindStringSubmatch(string(result.Fingerprint))[1]
+    }
     if len(result.Fingerprint.HttpFlows)>0{
-        handleCheck(result.Target,result.Port,path)
+        // println(result.Fingerprint.Banner)
+        // println(path)
+        if str.MatchAllOfSubString(string(result.Fingerprint.Banner), `src="axis2-web/images/axis_l.jpg"`){
+            handleCheck(result.Target,result.Port,path)
+        }
+        
     }
     
 }
