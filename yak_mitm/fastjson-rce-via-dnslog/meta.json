@@ -6,7 +6,7 @@
         "dnslog"
     ],
     "help": "通过 DNSLog 反连来扫描网站是否可能存在 FastJSON 漏洞",
-    "author": "v1ll4n,z3r0ne",
+    "author": "v1ll4n,z3r0ne,sucre",
     "module_file": "yak_mitm.yak",
     "params": null,
     "document": "document.md",
