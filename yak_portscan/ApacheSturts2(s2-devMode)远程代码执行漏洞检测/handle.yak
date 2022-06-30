@@ -23,7 +23,7 @@ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 F
     // dump(rsp)
     if len(rsp) > 0 {
         println(string(rsp))
-        if str.MatchAllOfSubString(rsp, `uid=`) && str.MatchAllOfSubString(rsp, `HTTP/1.1 200`){
+        if str.MatchAllOfRegexp(rsp, `uid=[0-9]+\(.*\) gid=[0-9]+\(.*\) groups=[0-9]+\(.*\)`){
             yakit.Info("%v found ApacheSturts2(s2-devMode)远程代码执行漏洞", addr)
             risk.NewRisk(
             addr,risk.title("ApacheSturts2(s2-devMode)远程代码执行漏洞"),
@@ -31,8 +31,11 @@ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 F
             risk.titleVerbose("ApacheSturts2(s2-devMode)远程代码执行漏洞存在"),
             risk.type("RCE[ApacheSturts2]"),
             risk.payload(`opensymphony.xwork2.dispatcher.HttpServletResponse&content=123456789&command=id`),
-            risk.request(string(req)),
-            risk.response(string(rsp)),
+            risk.details({
+                    "target":addr,
+                    "request":req,
+                    "response":rsp,
+            }),
         )
         }else{
             println("不存在ApacheSturts2(s2-devMode)远程代码执行漏洞")
