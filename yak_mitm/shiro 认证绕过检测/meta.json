@@ -1,0 +1,19 @@
+{
+    "name": "shiro 认证绕过检测",
+    "tags": [
+        "shiro",
+        "302",
+        "403",
+        "bypass"
+    ],
+    "help": "验证绕过  CVE-2016-6802 CVE-2020-11989 CVE-2020-1957 CVE-2020-13933 CVE-2020-17523",
+    "author": "sucre",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}
