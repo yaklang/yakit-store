@@ -33,22 +33,21 @@ handle = func(result /* *fp.MatchResult */) {
         return
     }
 
-    rsp, req, err := poc.HTTP(`GET /.git/HEAD HTTP/1.1
+    rsp, req, err := poc.HTTP(`GET /.git/./config HTTP/1.1
 Host: {{params(target)}}
 User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0
-Range: bytes=0-500
 
 `, poc.params({"target": str.HostPort(result.Target, result.Port)}))
     die(err)
 
-    if str.MatchAnyOfSubString(rsp, "HTTP/1.1 206", "ref:", "refs/heads/") {
+    if str.MatchAllOfSubString(rsp, "HTTP/1.1 200", "[core]", "repositoryformatversion","branch") {
         addr = str.HostPort(result.Target, result.Port)
         risk.NewRisk(
             addr, risk.title(sprintf("Git Leak in %v", addr)), risk.titleVerbose(sprintf(`Git 敏感信息泄漏: %v`, addr)),
             risk.severity("critical"), risk.type("source-leak"), risk.typeVerbose("GIT 源码泄漏"),
-            risk.payload("/.git/HEAD"), risk.details({
-                "request": string(req),
-                "response": string(rsp),
+            risk.payload("/.git/./config"), risk.details({
+                "request": req,
+                "response": rsp,
             }),
         )
         yakit.Info("发现未授权访问漏洞")
