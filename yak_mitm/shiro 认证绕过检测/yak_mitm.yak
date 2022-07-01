@@ -24,7 +24,7 @@ yakit_save(i: any)   // 可以输出并保存到数据库中，在 "插件输出
 
 
 check404 = func(rsp){
-    if str.MatchAnyOfRegexp(rsp, "<h1>404</h1>","<title>404"){
+    if str.MatchAnyOfRegexp(rsp, "<h1>404</h1>","<title>404","不存在的页面"){
         return true
     }
     return false
@@ -79,6 +79,8 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
     }
 
 
+    
+
     genPayload = fn(path) {
         payload = []
         // CVE-2016-6802 
@@ -109,8 +111,24 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
         return payload
     }
 
+
     freq,err = fuzz.HTTPRequest(req, fuzz.https(isHttps/*type: bool*/))
 
+    reqHeader, _ = str.SplitHTTPHeadersAndBodyFromPacket(req)
+    if !str.MatchAllOfRegexp(reqHeader, "remem?berMe=") {
+        yakit_output(sprintf("准备发送 shiro 探测请求 for: %v", url))
+        rsp, err = freq.FuzzCookie("rememberMe", "{{base64({{rs(10)}})}};").ExecFirst(httpool.https(isHttps))
+        if err != nil || rsp.Error != nil {
+            yakit_output(sprintf("执行失败【%v】: %v & %v", url, err, rsp.Error))
+            return
+        }
+
+        headers, body := str.SplitHTTPHeadersAndBodyFromPacket(rsp.ResponseRaw)
+        if !str.MatchAllOfRegexp(headers, `(?i)remem?berMe=deleteMe;`) {
+            yakit_output(sprintf("%v 未检测到 shiro", str.HostPort(host, port)))
+            return
+        }
+    }
 
     freq = freq.FuzzPath(genPayload(path).../*type: ...string*/)
     res, err  = freq.Exec(httpool.https(isHttps), httpool.size(1),httpool.redirectTimes(0))
