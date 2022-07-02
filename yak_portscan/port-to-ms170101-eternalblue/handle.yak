@@ -33,7 +33,7 @@ handle = func(result /* *fp.MatchResult */) {
         return
     }
 
-    if !result.IsOpen() && result.Port != 445 {
+    if !result.IsOpen() || result.Port != 445 {
         return
     }
 
