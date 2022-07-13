@@ -1,0 +1,14 @@
+{
+    "name": "基础 XSS 检测",
+    "tags": [
+        "xss"
+    ],
+    "help": "反射型 XSS 检测",
+    "author": "Longlone",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
