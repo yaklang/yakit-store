@@ -1,0 +1,14 @@
+{
+    "name": "Parameter Fuzz",
+    "tags": [
+        "fuzz"
+    ],
+    "help": "参数模糊测试与发现",
+    "author": "Longlone",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false
+}
