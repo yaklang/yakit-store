@@ -1,0 +1,18 @@
+{
+    "name": "Nginx 空字节代码执行漏洞检测",
+    "tags": [
+        "Nginx",
+        "php",
+        "rce"
+    ],
+    "help": "nginx版本0.5.*, 0.6.*, 0.7 \u003c= 0.7.65, 0.8 \u003c= 0.8.37受到影响  在使用PHP的FastCGI执行php的时候，URL里面在遇到%00空字节时与FastCGI处理不一致，导致可在非php文件中嵌入php代码，通过访问文件来执行其中的php代码",
+    "author": "l1lz",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

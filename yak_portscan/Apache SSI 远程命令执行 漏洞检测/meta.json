@@ -1,0 +1,47 @@
+{
+    "name": "Apache SSI 远程命令执行 漏洞检测",
+    "tags": [
+        "POC"
+    ],
+    "help": "Apache SSI 远程命令执行漏洞",
+    "author": "devil",
+    "module_file": "yak_module.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "目标地址",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "https",
+            "verbose": "是否为https请求",
+            "description": "",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "debug",
+            "verbose": "是否进行debug",
+            "description": "",
+            "type": "boolean",
+            "default_value": "",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

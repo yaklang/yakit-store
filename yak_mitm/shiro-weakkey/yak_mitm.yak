@@ -2,7 +2,7 @@
 
 #--------------------------WORKSPACE-----------------------------
 __test__ = func() {
-    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://192.168.101.211:8009/")
+    results, err := yakit.GenerateYakitMITMHooksParams("GET", "http://127.0.0.1:8080")
     if err != nil {
         return
     }
@@ -191,13 +191,24 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
                 continue
             }
 
-            cookie = append(cookie, {
+            if encItem.name == "aes-gcm" {
+                  cookie = append(cookie, {
+                "cookie": codec.EncodeBase64(append(result)),
+                "key": key,
+                "aes-mode": encItem.name,
+            })
+            }else{
+                  cookie = append(cookie, {
                 "cookie": codec.EncodeBase64(append(keyDecoded, result...)),
                 "key": key,
                 "aes-mode": encItem.name,
             })
+            }
+          
         }
     }
+
+    
 
     for _, cookieElement := range cookie {
         yakit_output(sprintf("Shiro Try KEY: %v for %v", cookieElement["key"], url))
@@ -213,6 +224,11 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
         if str.MatchAllOfRegexp(headers, `(?i)remem?berMe\s*=\s*deleteMe;?`) {
             continue
         }else{
+
+            vulInfo =  "CVE-2016-4437"
+            if cookieElement["aes-mode"] == "aes-gcm" {
+                vulInfo = ""
+            }
             detail := {
                 "shiro_cookie_key": shiroCookieKey,
                 "payload": cookieElement["cookie"],
@@ -224,8 +240,8 @@ mirrorNewWebsite = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*
             risk.NewRisk(
                 url,
                 risk.severity("critical"),
-                risk.title(sprintf("CVE-2016-4437(Shiro RCE): %v", url)),
-                risk.titleVerbose(sprintf("CVE-2016-4437(Shiro 远程代码执行)：%v", url)),
+                risk.title(sprintf("%v(Shiro RCE): %v",vulInfo, url)),
+                risk.titleVerbose(sprintf("%v(Shiro 远程代码执行)：%v", vulInfo,url)),
                 risk.type("rce"),
                 risk.payload(cookieElement["cookie"]),
                 risk.details(detail),

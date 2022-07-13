@@ -1,0 +1,37 @@
+{
+    "name": "Jboss JMX-Console未授权访问 漏洞检测",
+    "tags": [
+        "POC"
+    ],
+    "help": "Jboss JMX-Console未授权访问漏洞",
+    "author": "devil",
+    "module_file": "handle.yak",
+    "params": [
+        {
+            "name": "target",
+            "verbose": "扫描的目标",
+            "description": "",
+            "type": "string",
+            "default_value": "",
+            "required": true,
+            "group": "",
+            "extra_setting": ""
+        },
+        {
+            "name": "ports",
+            "verbose": "端口",
+            "description": "",
+            "type": "string",
+            "default_value": "80",
+            "required": false,
+            "group": "",
+            "extra_setting": ""
+        }
+    ],
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

@@ -1,0 +1,16 @@
+{
+    "name": "Nginx 目录遍历漏洞检测",
+    "tags": [
+        "Nginx"
+    ],
+    "help": "Nginx 的目录遍历与 Apache一样，属于配置方面的问题，错误的配置可导致目录遍历与源码泄露；nginx.conf 配置文件中autoindex on;开启状态 ",
+    "author": "l1lz",
+    "module_file": "yak_mitm.yak",
+    "params": null,
+    "document": "document.md",
+    "general_module_verbose": "",
+    "general_module_key": "",
+    "is_general_module": false,
+    "enable_plugin_selector": false,
+    "plugin_selector_types": ""
+}

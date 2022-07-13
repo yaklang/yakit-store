@@ -4,7 +4,7 @@
         "shiro"
     ],
     "help": "识别应用是否是 Shiro 应用，并尝试检测他的弱口令（CBC/GCM 模式均支持）",
-    "author": "v1ll4n",
+    "author": "v1ll4n,sucre",
     "module_file": "yak_mitm.yak",
     "params": null,
     "document": "document.md",

